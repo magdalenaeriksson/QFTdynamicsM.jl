@@ -1,0 +1,4 @@
+# directories for data, postprocessed data and plots
+data#/home/user/code/2PIcode/data
+post#/home/user/code/2PIcode/post
+plot#/home/user/code/2PIcode/plot

@@ -1,0 +1,4 @@
+# directories for data, postprocessed data and plots
+data#/home/leonovo/Coding/qhd/data
+post#/home/leonovo/Coding/qhd/post
+plot#/home/leonovo/Coding/qhd/plot

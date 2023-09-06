@@ -1,0 +1,4 @@
+# directories for data, postprocessed data and plots
+data#/bhome/gerhard/2pi/data
+post#/bhome/gerhard/2pi/post
+plot#/home/stud/gerhard/public_html/2pi

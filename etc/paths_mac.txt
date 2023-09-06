@@ -1,0 +1,4 @@
+# directories for data, postprocessed data and plots
+data#/Users/magdalenaeriksson/code/2PIcode/data
+post#/Users/magdalenaeriksson/code/2PIcode/post
+plot#/Users/magdalenaeriksson/code/2PIcode/plot

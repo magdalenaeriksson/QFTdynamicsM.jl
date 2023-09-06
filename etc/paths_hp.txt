@@ -1,0 +1,4 @@
+# directories for data, postprocessed data and plots
+data#/home/hattl/CodingPaths/2PI/data
+post#/home/hattl/CodingPaths/2PI/post
+plot#/home/hattl/CodingPaths/2PI/plot
