@@ -154,7 +154,8 @@ function QFTdynamicsSolution(modelfile::CSGaugeScalarFile, problem::QFTdynamicsP
         #simdata = Vector{CSGaugeScalarSimData}(undef,problem.num.Runs)
         simdata = Vector{SU2HiggsSimData}(undef,problem.num.Runs)
         # load samples from csv, we need one sample for each run
-        location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples90_B50_ith5_test"
+        #location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples90_B50_ith5_test"
+        location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples916_B42_ith2_test"
         for i in 1:problem.num.Runs
             simdata[i] = SU2HiggsSimData(problem.disc.Nx, problem.disc.sdim)
             df = CSV.read(location * "/Sample_" * string(i) * ".csv", DataFrame)
