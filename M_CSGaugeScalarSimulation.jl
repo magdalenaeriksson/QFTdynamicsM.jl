@@ -34,6 +34,10 @@ elapsedtime = @elapsed for t in (thesolution.problem.simsetup.lastEvolStep+1):(t
 end
 @show elapsedtime
 
+# store solution - Serialization broke because of pointers in simdata
+println("Storing the solution in: " * thesolution.problem.simsetup.datapath * "/SimSolution.jld"); flush(stdout)
+serialize( thesolution.problem.simsetup.datapath * "/SimSolution.jld", thesolution)
+
 ## plotting
 plots = Dict()
 plotdata(plots, thesolution, "c")  #create canvas
