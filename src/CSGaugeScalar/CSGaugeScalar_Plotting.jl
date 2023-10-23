@@ -38,6 +38,12 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
         plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray],  ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 2")
         plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 3")
     end
+    if mode == "c" plots["Phi2t2.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
+    else
+        #plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray], ls=line, marker=(:x,2),markercolor=color[2], lc=color[2], markerstrokecolor=:auto, label="mode 1")
+        plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray], yerr=[element.Phi2k_err[123] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 2")
+        plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], yerr=[element.Phi2k_err[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 3")
+    end
     # if mode == "c" plots["EGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"<E(t,k)E(t,-k)>/V")
     # else
     #     #plot!(plots["Gauge_t.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"D^2")
