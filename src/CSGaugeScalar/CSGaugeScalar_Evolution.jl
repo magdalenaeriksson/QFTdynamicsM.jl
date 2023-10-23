@@ -180,7 +180,7 @@ function updateEi!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::S
     #@show Ea[54][2]
 end
 
-function updateU!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, dt::Float64)
+function updateU!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     U_old = deepcopy(simdata.U)
     for idx in 1:simdata.vol
         #simdata.U[idx] = SVector(model.g*dt * simdata.Ectd[idx][1] * U_old[idx][1], 
@@ -193,7 +193,7 @@ function updateU!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, dt::Float6
     return
 end
 
-function updatePhi!(simdata::SU2HiggsSimData, dt::Float64)
+function updatePhi!(simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     Phi_old = deepcopy(simdata.Phi)
     for idx in 1:simdata.vol
         simdata.Phi[idx] = Phi_old[idx] + dt * simdata.Pi[idx]
@@ -202,7 +202,7 @@ function updatePhi!(simdata::SU2HiggsSimData, dt::Float64)
     return
 end
 
-function updatePi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, dt::Float64)
+function updatePi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     # NOTE: double check constants in scalar potential
     @unpack Pi, Phi, U, Nx = simdata
     oldPi = deepcopy(simdata.Pi)
@@ -351,13 +351,13 @@ function evolveSingle!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::C
     #@show disc.lev
     #
     ## First update t+dt/2 functions
-    updatePi!(model, simdata, disc.dt)
+    updatePi!(model, simdata, tmpdata, disc.dt)
     updateEa!(model, simdata, tmpdata, disc.dt)
     #
     ## Then update t+dt functions
-    updatePhi!(simdata, disc.dt)
+    updatePhi!(simdata, tmpdata, disc.dt)
     updateEi!(model, simdata, tmpdata, disc.dt)
-    updateU!(model, simdata, disc.dt)
+    updateU!(model, simdata, tmpdata, disc.dt)
     #
     ## Finally compute Gauss constraint with updated fields
     #calcGaussEa(model, simdata, tmpdata, disc)
@@ -381,13 +381,13 @@ function evolve!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vector{
     @Threads.threads for ichunk in 1:num.threads
         for i in num.threadranges[ichunk]
             ## First update t+dt/2 functions
-            updatePi!(model, simdata[i], disc.dt)
+            updatePi!(model, simdata[i], tmpdata[ichunk], disc.dt)
             updateEa!(model, simdata[i], tmpdata[ichunk], disc.dt)
             #
             ## Then update t+dt functions
-            updatePhi!(simdata[i], disc.dt)
+            updatePhi!(simdata[i], tmpdata[ichunk], disc.dt)
             updateEi!(model, simdata[i], tmpdata[ichunk], disc.dt)
-            updateU!(model, simdata[i], disc.dt)
+            updateU!(model, simdata[i], tmpdata[ichunk], disc.dt)
         end
     end
 
@@ -401,13 +401,13 @@ function evolveSerial!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::V
 
     for i in 1:num.Runs
         ## First update t+dt/2 functions
-        updatePi!(model, simdata[i], disc.dt)
+        updatePi!(model, simdata[i], tmpdata[1], disc.dt)
         updateEa!(model, simdata[i], tmpdata[1], disc.dt)
         #
         ## Then update t+dt functions
-        updatePhi!(simdata[i], disc.dt)
+        updatePhi!(simdata[i], tmpdata[1], disc.dt)
         updateEi!(model, simdata[i], tmpdata[1], disc.dt)
-        updateU!(model, simdata[i], disc.dt)
+        updateU!(model, simdata[i], tmpdata[1], disc.dt)
     end
 
     simsetup.lastEvolStep = t 
