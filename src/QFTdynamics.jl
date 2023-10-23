@@ -21,7 +21,7 @@ abstract type AbstractModelfile end
 include("TwoPIGaugeScalar/TwoPIGaugeScalar_Modelfile.jl") 
 #include("CSScalar/CSScalar_Modelfile.jl") 
 #
-#include("CSGaugeScalar/CSGaugeScalar_Modelfile.jl") 
+include("CSGaugeScalar/CSGaugeScalar_Modelfile.jl") 
 
 
 export fun
