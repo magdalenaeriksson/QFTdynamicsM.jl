@@ -6,7 +6,7 @@ const REPL = true
         "Mass"  =>  1,
         "Nx"    =>  32, 
         "sdim"  =>  3, 
-        "dt"    =>  0.05 , #0.05,
+        "dt"    =>  0.05,
         "Nsteps"=>  200,
         "NstepsinMemory"  =>  0, # 3 - min for LO
         "Nmeas" =>  0, # either 0 (all timesteps are measured) or >=3 (because the plot script wants to draw 3 graphs)
@@ -14,7 +14,7 @@ const REPL = true
         "Mod"  =>  "CS_SUNgaugeScalar",
         #"Mod"  =>  "CS_U1gaugeScalar",
         "Lambda" =>  0.125,
-        "g" =>  0.667,
+        "g" =>  0.002,#0.667,
         "N" =>  2,
         #"ONgroup"=> 1,
         #initialisation
@@ -33,9 +33,9 @@ const REPL = true
         # Numerics
         #"Num"   =>  "GPUreduced",
         "Num"   =>  "CPU",
-        "Runs"   =>  90,
+        "Runs"   =>  90,#90,
         "seed"   =>  1,
         "Nchunks"   =>  0, # if 0 -> set to @Threads.nthreads
         #extra
-        "tag"   =>  "test", #dont use "_" in the tag
+        "tag"   =>  "newInitalCondsTest", #dont use "_" in the tag
         "ov"    =>  true)
