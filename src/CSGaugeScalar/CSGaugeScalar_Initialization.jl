@@ -112,10 +112,10 @@ function initPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpda
     rhox .*= -model.g
     #
     ## check (global) Gauss constraint
-    @show sum(rhox[1])
-    @show sum(rhox[2])
-    @show sum(rhox[3])
-    @show sum(rhox[4])
+    ##### @show sum(rhox[1])
+    ##### @show sum(rhox[2])
+    ##### @show sum(rhox[3])
+    ##### @show sum(rhox[4])
     
     return
 end
@@ -203,8 +203,8 @@ function initE!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2
             end
         end
     end
-    @show sum(Ga2Latt)/vol
-    @show sum(GaRelLatt)/vol
+    ###### @show sum(Ga2Latt)/vol
+    ###### @show sum(GaRelLatt)/vol
 
     #@show Ga[4]
     #@show Garel[223]
