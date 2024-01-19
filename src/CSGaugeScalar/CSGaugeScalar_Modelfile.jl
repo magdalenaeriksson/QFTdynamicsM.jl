@@ -120,35 +120,6 @@ mutable struct QFTdynamicsSolutionCSGaugeScalar{SU2HiggsSimData <: CSGaugeScalar
 end
 
 function QFTdynamicsSolution(modelfile::CSGaugeScalarFile, problem::QFTdynamicsProblem)
-        #simdata = SU2HiggsSimData(problem.disc.Nx, problem.disc.sdim)
-        #tmpdata = SU2HiggsTmpData(simdata)
-        #
-        ## load samples from csv
-        #location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples90_B50_ith5_test"
-        #sampleNbr = 42 #sample number 42
-        ## we need one sample for each run
-        #df = CSV.read(location * "/Sample_" * string(sampleNbr) * ".csv", DataFrame)
-        ##@show length(df.phi1x)
-        ##@show problem.disc.vol
-        #for idx in 1:problem.disc.vol
-        #    # phi
-        #    tmpdata.phix[1][idx] = df.phi1x[idx]
-        #    tmpdata.phix[2][idx] = df.phi2x[idx]
-        #    tmpdata.phix[3][idx] = df.phi3x[idx]
-        #    tmpdata.phix[4][idx] = df.phi4x[idx]
-        #    # pi
-        #    tmpdata.piix[1][idx] = df.pii1x[idx]
-        #    tmpdata.piix[2][idx] = df.pii2x[idx]
-        #    tmpdata.piix[3][idx] = df.pii3x[idx]
-        #    tmpdata.piix[4][idx] = df.pii4x[idx]
-        #end
-
-        #for element in problem.disc.fftwhelper
-        #    for idx in element.ind
-        #        simdata.k2values[idx] = element.lev2
-        #    end
-        #end
-        ##########################################################################
 
         # set simdata
         #simdata = Vector{CSGaugeScalarSimData}(undef,problem.num.Runs)
