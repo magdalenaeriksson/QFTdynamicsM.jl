@@ -16,8 +16,8 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
     @unpack vol, Nx = disc
 
     ##
-    location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples90_B50_ith5_test"
-    CSnbrOfRuns = 10 # this must match CS code
+    location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples916_B42_ith2_test"
+    CSnbrOfRuns = 8 # this must match CS code
 
     for sampleNbr in 1:CSnbrOfRuns
         ## load samples
@@ -49,16 +49,16 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
         Pi4x =  piix[3] + im * piix[4]
         #
         ### construct Phik
-        Phi1k = fftplan * Phi1x / sqrt(vol) #fft(Phi1x) / sqrt(vol) # divide by sqrt(vol) as we want volume-averaged correlators
-        Phi2k = fftplan * Phi2x / sqrt(vol) #fft(Phi2x) / sqrt(vol)
-        Phi3k = fftplan * Phi3x / sqrt(vol) #fft(Phi3x) / sqrt(vol)
-        Phi4k = fftplan * Phi4x / sqrt(vol) #fft(Phi4x) / sqrt(vol)
+        Phi1k = (fftplan * Phi1x) / sqrt(vol) #fft(Phi1x) / sqrt(vol) # divide by sqrt(vol) as we want volume-averaged correlators
+        Phi2k = (fftplan * Phi2x) / sqrt(vol) #fft(Phi2x) / sqrt(vol)
+        Phi3k = (fftplan * Phi3x) / sqrt(vol) #fft(Phi3x) / sqrt(vol)
+        Phi4k = (fftplan * Phi4x) / sqrt(vol) #fft(Phi4x) / sqrt(vol)
         #
         ## construct Pik
-        Pi1k = fftplan * Pi1x / sqrt(vol) #fft(Pi1x) / sqrt(vol) 
-        Pi2k = fftplan * Pi2x / sqrt(vol) #fft(Pi2x) / sqrt(vol)
-        Pi3k = fftplan * Pi3x / sqrt(vol) #fft(Pi3x) / sqrt(vol)
-        Pi4k = fftplan * Pi4x / sqrt(vol) #fft(Pi4x) / sqrt(vol)
+        Pi1k = (fftplan * Pi1x) / sqrt(vol) #fft(Pi1x) / sqrt(vol) 
+        Pi2k = (fftplan * Pi2x) / sqrt(vol) #fft(Pi2x) / sqrt(vol)
+        Pi3k = (fftplan * Pi3x) / sqrt(vol) #fft(Pi3x) / sqrt(vol)
+        Pi4k = (fftplan * Pi4x) / sqrt(vol) #fft(Pi4x) / sqrt(vol)
         #
         ## construct matrix Phi and Pi
         for idx in 1:disc.vol
@@ -104,22 +104,25 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
                 end
             end
         end
+        
         ##
         ## compute gauge field at t = dt
         #summ = 0.
         for a in 1:3
             for i in 1:3
                 for idx in 1:vol
-                    Aaix[a][i][idx] = disc.dt * Ea[idx][i][a]
+                    Aaix[a][i][idx] = -disc.dt * Ea[idx][i][a]
                 end
                 #summ += sum(Aaix[a][i])
             end
         end
-        #@show summ/disc.dt
+        # @show sum(Aaix[1][1])
+        # @show sum(Aaix[2][1])
+        # @show sum(Aaix[3][1])
         # construct physical gauge field in momentum space
         for a in 1:3
             for i in 1:3
-                Aaik[a][i] .= fftplan * Aaix[a][i]
+                Aaik[a][i] .= (fftplan * Aaix[a][i])
 
                 # add phase for physical gauge field located between lattice sites:
                 for nx in 1:Nx
@@ -132,7 +135,7 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
                 end
             end
         end
-
+        @show sum(DLk)
         # construct physical propagator
         for i in 1:3
             for j in 1:3
@@ -140,9 +143,10 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
                 Dk[i,j] /= 3*vol
 
                 # compute longitudinal propagator
-                DLk  .= P_L[i,j] .* Dk[i,j]
+                DLk  .+= P_L[j,i] .* Dk[i,j]
             end
         end
+        @show sum(DLk)
         # compute transverse propagators
         DTk .= Dk[1,1] + Dk[2,2] + Dk[3,3] - DLk
 
