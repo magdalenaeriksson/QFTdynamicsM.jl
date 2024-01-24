@@ -35,15 +35,30 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     if mode == "c" plots["Phi2t.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
     else
         plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray], ls=line, marker=(:x,2),markercolor=color[2], lc=color[2], markerstrokecolor=:auto, label="mode 1")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray],  ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 2")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 3")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray],  ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 123")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 500")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[1] for element in measurearray], ls=line, marker=(:x,1),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="Emode 1")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[123] for element in measurearray],  ls=line, lc=color[5], markerstrokecolor=:auto, label="Emode 123")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[500] for element in measurearray], ls=line, lc=color[6], markerstrokecolor=:auto, label="Emode 500")
     end
-    if mode == "c" plots["Phi2t2.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
+    if mode == "c" plots["E11.png"] = plot(xlabel = L"tm",ylabel =L"<|E_{11}(t;\mathbf{p})|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
     else
-        #plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray], ls=line, marker=(:x,2),markercolor=color[2], lc=color[2], markerstrokecolor=:auto, label="mode 1")
-        plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray], yerr=[element.Phi2k_err[123] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 2")
-        plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], yerr=[element.Phi2k_err[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 3")
+        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[1] for element in measurearray], ls=line, marker=(:x,1),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="Emode 1")
+        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[123] for element in measurearray],  ls=line, lc=color[5], markerstrokecolor=:auto, label="Emode 123")
+        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[500] for element in measurearray], ls=line, lc=color[6], markerstrokecolor=:auto, label="Emode 500")
     end
+    if mode == "c" plots["Es.png"] = plot(xlabel = L"tm",ylabel =L"<|E_{11}(t;\mathbf{p})|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
+    else
+        plot!(plots["Es.png"],[element.time for element in measurearray], [element.E2k[1] for element in measurearray], ls=line,  lc=color[1], markerstrokecolor=:auto, label="E11[0]")
+        plot!(plots["Es.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray],  ls=line, lc=color[2], markerstrokecolor=:auto, label="E22[0]")
+        plot!(plots["Es.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto,  label="E33[0]")
+    end
+    # if mode == "c" plots["Phi2t2.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
+    # else
+    #     #plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray], ls=line, marker=(:x,2),markercolor=color[2], lc=color[2], markerstrokecolor=:auto, label="mode 1")
+    #     plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray], yerr=[element.Phi2k_err[123] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 2")
+    #     plot!(plots["Phi2t2.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], yerr=[element.Phi2k_err[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 3")
+    # end
     # if mode == "c" plots["EGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"<E(t,k)E(t,-k)>/V")
     # else
     #     #plot!(plots["Gauge_t.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"D^2")
@@ -58,29 +73,29 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     #     plot!(plots["EGauge_t2.png"],[element.time for element in measurearray], [element.EpropL[500] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="E2L(n=500)")
     #     plot!(plots["EGauge_t2.png"],[element.time for element in measurearray], [element.EpropT[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="E2T(n=500)")
     # end
-    # if mode == "c" plots["AGauge_t1.png"] = plot(xlabel = L"tm",ylabel =L"Dij(t,k)=<Ai(t,0)Aj(t,0)>/V")
-    # else
-    #     plot!(plots["AGauge_t1.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="DL(k=0)")
-    #     plot!(plots["AGauge_t1.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="DT(k=0)")
-    # end
-    # if mode == "c" plots["AGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"Dij(t,k)=<Ai(t,k)Aj(t,-k)>/V")
-    # else
-    #     #plot!(plots["Gauge_t.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"D^2")
-    #     plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DLk[123] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="DL(n=123)")
-    #     plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DTk[123] for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="DT(n=123)")
-    #     plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DLk[500] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="DL(n=500)")
-    #     plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DTk[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="DT(n=500)")
-    # end
+    #if mode == "c" plots["AGauge_t1.png"] = plot(xlabel = L"tm",ylabel =L"Dij(t,k)=<Ai(t,0)Aj(t,0)>/V")
+    #else
+    #    plot!(plots["AGauge_t1.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="DL(k=0)")
+    #    plot!(plots["AGauge_t1.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="DT(k=0)")
+    #end
+    #if mode == "c" plots["AGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"Dij(t,k)=<Ai(t,k)Aj(t,-k)>/V")
+    #else
+    #    #plot!(plots["Gauge_t.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"D^2")
+    #    plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DLk[123] for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="DL(n=123)")
+    #    plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DTk[123] for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="DT(n=123)")
+    #    plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DLk[500] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="DL(n=500)")
+    #    plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DTk[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="DT(n=500)")
+    #end
     #####################################################################################################
     ## momentum plots
     ##
-    if mode == "c" plots["Phi2k.png"] = plot(xlabel = L"\mathbf{|p}|",ylabel =L"<|\Phi(t;\mathbf{|p}|)|^2>/V")#yerr=measurearray[1].Phi2k_err,
-    else
-        #scatter!(plots["Phi2k.png"],kvals, measurearray[1].Phi2k, mc=:blue, ms=1, ma=0.3, markerstrokecolor=:auto, label=L"\Phi^2(k,t=0)")
-        plot!(plots["Phi2k.png"],kvals, measurearray[1].Phi2k, yerr=measurearray[1].Phi2k_err, ls=line, lc=color[2], markerstrokecolor=:auto, label=L"t=t_0")
-        plot!(plots["Phi2k.png"],kvals, measurearray[end].Phi2k, yerr=measurearray[end].Phi2k_err, ls=line, lc=color[3], markerstrokecolor=:auto, label=L"t=t_e")
-        plot!(plots["Phi2k.png"],kvals, [0.5 / sqrt(k^2 + disc.Mass^2) for k in kvals], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"\frac{1/2}{\omega_\mathbf{p}}")
-    end
+    # if mode == "c" plots["Phi2k.png"] = plot(xlabel = L"\mathbf{|p}|",ylabel =L"<|\Phi(t;\mathbf{|p}|)|^2>/V")#yerr=measurearray[1].Phi2k_err,
+    # else
+    #     #scatter!(plots["Phi2k.png"],kvals, measurearray[1].Phi2k, mc=:blue, ms=1, ma=0.3, markerstrokecolor=:auto, label=L"\Phi^2(k,t=0)")
+    #     plot!(plots["Phi2k.png"],kvals, measurearray[1].Phi2k, yerr=measurearray[1].Phi2k_err, ls=line, lc=color[2], markerstrokecolor=:auto, label=L"t=t_0")
+    #     plot!(plots["Phi2k.png"],kvals, measurearray[end].Phi2k, yerr=measurearray[end].Phi2k_err, ls=line, lc=color[3], markerstrokecolor=:auto, label=L"t=t_e")
+    #     plot!(plots["Phi2k.png"],kvals, [0.5 / sqrt(k^2 + disc.Mass^2) for k in kvals], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"\frac{1/2}{\omega_\mathbf{p}}")
+    # end
     # if mode == "c" plots["EGauge_k.png"] = plot(xlabel = L"k",ylabel ="E-field props; <Ei(t,k)Ej(t,-k)>/V")
     # else
     #     #scatter!(plots["Phi2k.png"],kvals, measurearray[1].Phi2k, mc=:blue, ms=1, ma=0.3, markerstrokecolor=:auto, label=L"\Phi^2(k,t=0)")
@@ -113,24 +128,24 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     #####################################################################################################
     ### Energy Plots
     ###
-    if mode == "c" plots["EnergyFractions.png"] = plot(xlabel = L"tm",ylabel ="Energy fractions")
-    else
-       plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Eelec/element.Etot for element in measurearray], ls=line, lc=color[1],  markerstrokecolor=:auto, label="elec")
-       plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Emagn/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="magn")
-       #plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
-       plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalPot/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal pot")
-    end
-    if mode == "c" plots["EnergyTot.png"] = plot(xlabel = L"tm",ylabel ="Total energy")
-    else
-       plot!(plots["EnergyTot.png"],[element.time for element in measurearray], [element.Etot for element in measurearray], ls=line,marker=(:x,2),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="")
-    end
-    if mode == "c" plots["EnergyScalar.png"] = plot(xlabel = L"tm",ylabel ="Energy fractions")
-    else
-       plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.Etot/element.Etot for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="total")
-       plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [(element.EscalKin + element.EscalPot)/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="scal tot")
-       plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
-       #plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [10*element.EscalPot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="10xpot")
-    end
+    # if mode == "c" plots["EnergyFractions.png"] = plot(xlabel = L"tm",ylabel ="Energy fractions")
+    # else
+    #    plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Eelec/element.Etot for element in measurearray], ls=line, lc=color[1],  markerstrokecolor=:auto, label="elec")
+    #    plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Emagn/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="magn")
+    #    #plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
+    #    plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalPot/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal pot")
+    # end
+    # if mode == "c" plots["EnergyTot.png"] = plot(xlabel = L"tm",ylabel ="Total energy")
+    # else
+    #    plot!(plots["EnergyTot.png"],[element.time for element in measurearray], [element.Etot for element in measurearray], ls=line,marker=(:x,2),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="")
+    # end
+    # if mode == "c" plots["EnergyScalar.png"] = plot(xlabel = L"tm",ylabel ="Energy fractions")
+    # else
+    #    plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.Etot/element.Etot for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="total")
+    #    plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [(element.EscalKin + element.EscalPot)/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="scal tot")
+    #    plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
+    #    #plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [10*element.EscalPot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="10xpot")
+    # end
     # if mode == "c" plots["EnergyGauge.png"] = plot(xlabel = L"tm",ylabel ="Energy components")
     # else
     #    plot!(plots["EnergyGauge.png"],[element.time for element in measurearray], [element.Eelec for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="elec")
