@@ -8,14 +8,14 @@ parameters = Dict(
     "Nx"    =>  32, 
     "sdim"  =>  3, 
     "dt"    =>  0.05,
-    "Nsteps"=>  10000,
+    "Nsteps"=>  800,
     "NstepsinMemory"  =>  3, # 3 - min for LO (0 for all steps)
-    "Nmeas" =>  5000, # either 0 (all timesteps are measured) or >=3 (because the plot script wants to draw 3 graphs)
+    "Nmeas" =>  0, # either 0 (all timesteps are measured) or >=3 (because the plot script wants to draw 3 graphs)
     #model
     "Mod"  =>  "SUNgaugeScalar",
     #"Mod"  =>  "U1gaugeScalar",
-    "Lambda" =>  1,#0.125,
-    "g" =>  1,#0.667,
+    "Lambda" =>  0.125,
+    "g" =>  0.667,
     "N" =>  2,
     #"ONgroup"=> 1,
     #initialisation
