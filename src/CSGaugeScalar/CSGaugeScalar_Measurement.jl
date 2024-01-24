@@ -107,7 +107,7 @@ end
 export createMeasurement
 function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGaugeScalarSimData, tmpdata::CSGaugeScalarTmpData, disc::CSGaugeScalarDiscretization)
     @unpack pauli, sdim, vol, Nx = simdata
-    @unpack Phi_xcomp, Phi_kcomp, Phi_k, Phi2ktmp, Phi4ktmp, Eaix, Eaik, E2k, E2L, E2T, Aaix, Aaik, Dk, DL, DT, ftplan, iftplan, nvalues, P_L = tmpdata
+    @unpack Phi_xcomp, Phi_kcomp, Phi_k, Phi2ktmp, Phi4ktmp, Eaix, Eaik, E2k, E2L, E2T, Aaix, Aaik, Dk, DL, DT, ftplan, iftplan, nvalues, P_L, P_T = tmpdata
     # init measurement object
 	meas = MeasurementCSGaugeScalar{length(disc.fftwhelper)}()
     # scalar measurements
@@ -158,79 +158,59 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
 
     ## gauge proagator measurements
     # extract gauge field in coordinate space
-    if t==2
-        for a in 1:3
-            for i in 1:3
-                for idx in 1:vol
-                    Aaix[a][i][idx] = 0
-                    Eaix[a][i][idx] = simdata.Ea[idx][i][a]
-                end
-            end
-        end
-    elseif t==3
-        for a in 1:3
-            for i in 1:3
-                for idx in 1:vol
-                    Aaix[a][i][idx] = disc.dt * simdata.Ea[idx][i][a]
-                    Eaix[a][i][idx] = simdata.Ea[idx][i][a]
-                end
-            end
-        end
-    else
-        for a in 1:3
-            for i in 1:3
-                for idx in 1:vol
-                    #Aaix[a][i][idx] = tr( im * pauli[a] * log.(simdata.U[idx][i]) ) / model.g
-                    #Aaix[a][i][idx] = tr( im * pauli[a] * simdata.U[idx][i] ) / model.g
-                    Aaix[a][i][idx] = tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i]))) / (2*model.g)
-                    Eaix[a][i][idx] = simdata.Ea[idx][i][a]
-                end
+    for a in 1:3
+        for i in 1:3
+            for idx in 1:vol
+                #Aaix[a][i][idx] = tr( im * pauli[a] * log.(simdata.U[idx][i]) ) / model.g
+                #Aaix[a][i][idx] = tr( im * pauli[a] * simdata.U[idx][i] ) / model.g
+                Aaix[a][i][idx] = tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i])) ) / (2*model.g)
+                Eaix[a][i][idx] = simdata.Ea[idx][i][a]
             end
         end
     end
-
+    #@show sum(Aaix[1][1])
+  
     # construct physical gauge field in momentum space
     for a in 1:3
         for i in 1:3
-            #Aaik[a][i] .= fft(Aaix[a][i])
-            #Eaik[a][i] .= fft(Eaix[a][i])
-            Aaik[a][i] .= ftplan * Aaix[a][i]
-            Eaik[a][i] .= ftplan * Eaix[a][i]
+            Aaik[a][i] .= (ftplan * Aaix[a][i])
+            Eaik[a][i] .= (ftplan * Eaix[a][i])
 
             # add phase for physical gauge field located between lattice sites:
-            for nx in 1:Nx
-                for ny in 1:Nx
-                    for nz in 1:Nx
-                        p = [ 2*pi*nvalues[nx]/Nx, 2*pi*nvalues[ny]/Nx, 2*pi*nvalues[nz]/Nx ]
-                        Aaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
-                        Eaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
-                    end
-                end
-            end
+            #for nx in 1:Nx
+            #    for ny in 1:Nx
+            #        for nz in 1:Nx
+            #            p = [ 2*pi*nvalues[nx]/Nx, 2*pi*nvalues[ny]/Nx, 2*pi*nvalues[nz]/Nx ]
+            #            Aaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
+            #            Eaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
+            #        end
+            #    end
+            #end
         end
     end
     
-    # construct physical propagator
+    # construct physical propagators
+    DL .*= 0
+    DT .*= 0
+    E2L .*=0
+    E2T .*=0
     for i in 1:3
         for j in 1:3
-
-            Dk[i,j] .= ( Aaik[1][i] .* conj(Aaik[1][i])  +  Aaik[2][i] .* conj(Aaik[2][i])  +  Aaik[3][i] .* conj(Aaik[3][i]) )
-            Dk[i,j] /= 3*vol
-            E2k[i,j] .= ( Eaik[1][i] .* conj(Eaik[1][i])  +  Eaik[2][i] .* conj(Eaik[2][i])  +  Eaik[3][i] .* conj(Eaik[3][i]) )
-            E2k[i,j] /= 3*vol
-
-            # compute longitudinal propagators
-            DL  .= P_L[i,j] .* Dk[i,j]
-            E2L .= P_L[i,j] .* E2k[i,j]
-
+            Dk[i,j]  .= Aaik[1][i] .* conj(Aaik[1][j])  +  Aaik[2][i] .* conj(Aaik[2][j])  +  Aaik[3][i] .* conj(Aaik[3][j]) 
+            E2k[i,j] .= Eaik[1][i] .* conj(Eaik[1][j])  +  Eaik[2][i] .* conj(Eaik[2][j])  +  Eaik[3][i] .* conj(Eaik[3][j]) 
+            Dk[i,j]  ./= 3*vol
+            E2k[i,j] ./= 3*vol
+            # compute longitudinal and transverse propagators (P_L & P_T pre-calculated in tmpdata)
+            DL  .+= P_L[i,j] .* Dk[i,j] 
+            E2L .+= P_L[i,j] .* E2k[i,j]
+            DT  .+= P_T[i,j] .* Dk[i,j] 
+            E2T .+= P_T[i,j] .* E2k[i,j]
         end
     end
-    # compute transverse propagators
-    DT .= Dk[1,1] + Dk[2,2] + Dk[3,3] - DL
-    E2T .= E2k[1,1] + E2k[2,2] + E2k[3,3] - E2L
 
-    #@show sum(real(DL))
-    #@show sum(real(DT))
+    #@show sum(Phi2ktmp)/vol
+    #@show sum(DT)/vol
+    #@show sum(DT)/vol
     #@show sum(real(E2L))
     #@show sum(real(E2T))
 
@@ -240,13 +220,15 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
             idx = disc.fftwhelper[i].ind[j]
             meas.Phi2k[i] += Phi2ktmp[idx]
             meas.Phi4k[i] += Phi4ktmp[idx]
-            meas.DLk[i] += real(DL[idx])
-            meas.DTk[i] += real(DT[idx])
-            meas.EpropL[i] += real( E2L[idx] )
-            meas.EpropT[i] += real( E2T[idx] )
+            meas.E2k[i] += E2k[1,1][idx] # for example, just a measarr to check stuff
+            meas.DLk[i] += abs( DL[idx])
+            meas.DTk[i] += abs( DT[idx])
+            #meas.EpropL[i] += real( E2L[idx] )
+            #meas.EpropT[i] += real( E2T[idx] )
         end
         meas.Phi2k[i] /= disc.fftwhelper[i].deg
         meas.Phi4k[i] /= disc.fftwhelper[i].deg
+        meas.E2k[i] /= disc.fftwhelper[i].deg
         meas.DLk[i] /= disc.fftwhelper[i].deg
         meas.DTk[i] /= disc.fftwhelper[i].deg
         meas.EpropL[i] /= disc.fftwhelper[i].deg
