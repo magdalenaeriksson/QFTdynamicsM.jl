@@ -27,7 +27,9 @@ function createlattice(Nx,sdim)
     if sdim==3 return ones(Nx,Nx,Nx) end
 end
 
+export clattice
 const clattice{sdim} = Array{ComplexF64,sdim}
+export createclattice
 function createclattice(Nx,sdim)
     if sdim==1 return ones(ComplexF64, Nx) end
     if sdim==2 return ones(ComplexF64, Nx,Nx) end

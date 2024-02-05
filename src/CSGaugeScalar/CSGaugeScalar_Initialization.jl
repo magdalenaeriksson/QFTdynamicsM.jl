@@ -2,6 +2,7 @@ using Parameters
 using FFTW
 using LinearAlgebra
 using Random, Distributions
+using DataFrames
 
 function initPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization, rng::Random.MersenneTwister)
     @unpack flatt, f, c, A, phik, piik, rhok, chik, phix, piix, rhox, chix, ftplan, iftplan, Nx, sdim = tmpdata
@@ -342,15 +343,144 @@ function initialize!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vec
     #@unpack problem, simdata, measurearray = thesolution
     @unpack problem, simdata, measurearray, measurearrayofruns = thesolution
     @unpack model, pexp, disc, init, reno, num, simsetup = problem
-    #if num.seed == 0 
-    #    rng = MersenneTwister( )
-    #else
-    #    rng = MersenneTwister( num.seed )
-    #end
-    #println("using seed: ", num.seed)
+
+    if typeof(init) == QFTdynamics.CSGaugeScalarThermalMC
+        samplefile = ""
+    elseif typeof(init) == QFTdynamics.CSGaugeScalarParticleMC
+        # read Scalar field pi and phi from file and set values (x space) in simadata.phix / .piix 
+        samplefile = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples916_B42_ith2_test"
+        for i in 1:num.Runs
+            df = CSV.read(samplefile * "/Sample_" * string(i) * ".csv", DataFrame)
+            for idx in 1:disc.vol
+                # phi
+                simdata[i].phix[1][idx] = df.phi1x[idx]
+                simdata[i].phix[2][idx] = df.phi2x[idx]
+                simdata[i].phix[3][idx] = df.phi3x[idx]
+                simdata[i].phix[4][idx] = df.phi4x[idx]
+                # pi
+                simdata[i].piix[1][idx] = df.pii1x[idx]
+                simdata[i].piix[2][idx] = df.pii2x[idx]
+                simdata[i].piix[3][idx] = df.pii3x[idx]
+                simdata[i].piix[4][idx] = df.pii4x[idx]
+            end
+        end
+        initSimDataParallel!(model, simdata, tmpdata, disc, num) # does: initU!, initMCPhiandPi!, initE!
+        # note: initMCPhiandPi! constructs simdata.Phi / Pii from the piix / phix read from the file. additionally it calcs rho  
+
+    else # no sample file
+        #
+        # like above set simdata[i].phix[1-4] & .piix[1-4] and the let initSimDataParallel! do the rest
+        #
+
+        # get random number generator
+
+        # Mersenne Twister
+        ##if num.seed == 0 
+        ##    rng = MersenneTwister( )
+        ##else
+        ##    rng = MersenneTwister( num.seed )
+        ##end
+        ##println("using seed: ", num.seed)
+        # built in rng 
+        Random.seed!(123) # Setting the seed
+        d = Normal(0, 1)
+
+        # Maybe let more threads work on it
+        #@Threads.threads for ichunk in 1:num.threads
+        #    for i in num.threadranges[ichunk]
+
+        # get particle nr per mode
+        n = getparticlenr(init, disc)
+        # initialize 
+        for i in 1:num.Runs
+            # get temporary storage
+            # x space -> real lattices
+            phix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+            piix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+            # k space -> complex lattices
+            phik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
+            piik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
+            flatt = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+            f = zeros(4)
+            c = zeros(4)
+            A = zeros(4,4)
+
+            #"Float64" in rand() -->> dist = Normal(0, 1) 
+            for a in 1:4
+                phix[a] = rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(phik[a]))
+                piix[a] = rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(piik[a]))
+                phik[a] = fft(phix[a]) / sqrt(disc.vol)
+                piik[a] = fft(piix[a]) / sqrt(disc.vol)
+                ## add factors of omega(k) to phik/piik 
+                for i in 1:length(disc.fftwhelper)
+                    omega = sqrt(disc.fftwhelper[i].lev2 + model.Mass^2)
+                    for j in 1:disc.fftwhelper[i].deg
+                        idx = disc.fftwhelper[i].ind[j]
+                        phik[a][idx] *= sqrt( (n[i] + 0.5)   /omega)
+                        piik[a][idx] *= sqrt( (n[i] + 0.5) *omega )
+                    end
+                end
+            end
+
+            # construct Gauss matrix equation elements: f
+            flatt[1] .= real.(piik[1]) .* real.(phik[4]) .- real.(piik[4]) .* real.(phik[1]) .+ real.(piik[3]) .* real.(phik[2]) .- real.(piik[2]) .* real.(phik[3]) .+ imag.(piik[1]) .* imag.(phik[4]) .- imag.(piik[4]) .* imag.(phik[1]) .+ imag.(piik[3]) .* imag.(phik[2]) .- imag.(piik[2]) .* imag.(phik[3])
+            flatt[2] .= real.(piik[3]) .* real.(phik[1]) .- real.(piik[1]) .* real.(phik[3]) .+ real.(piik[4]) .* real.(phik[2]) .- real.(piik[2]) .* real.(phik[4]) .+ imag.(piik[3]) .* imag.(phik[1]) .- imag.(piik[1]) .* imag.(phik[3]) .+ imag.(piik[4]) .* imag.(phik[2]) .- imag.(piik[2]) .* imag.(phik[4])
+            flatt[3] .= real.(piik[1]) .* real.(phik[2]) .- real.(piik[2]) .* real.(phik[1]) .+ real.(piik[4]) .* real.(phik[3]) .- real.(piik[3]) .* real.(phik[4]) .+ imag.(piik[1]) .* imag.(phik[2]) .- imag.(piik[2]) .* imag.(phik[1]) .+ imag.(piik[4]) .* imag.(phik[3]) .- imag.(piik[3]) .* imag.(phik[4])
+            flatt[4] .= real.(piik[1]) .* real.(phik[1]) .+ real.(piik[2]) .* real.(phik[2]) .+ real.(piik[3]) .* real.(phik[3]) .+ real.(piik[4]) .* real.(phik[4]) .+ imag.(piik[1]) .* imag.(phik[1]) .+ imag.(piik[2]) .* imag.(phik[2]) .+ imag.(piik[3]) .* imag.(phik[3]) .+ imag.(piik[4]) .* imag.(phik[4])
+            # exclude zero-modes from f lattice sum:
+            flatt[1][1]=0
+            flatt[2][1]=0
+            flatt[3][1]=0
+            flatt[4][1]=0
+            # set f
+            for a in 1:4
+                f[a] = sum(flatt[a])
+            end
+            # set A
+            A[1,1] =  real(phik[4][1])
+            A[1,2] = -real(phik[3][1])
+            A[1,3] =  real(phik[2][1])
+            A[1,4] = -real(phik[1][1])
+
+            A[2,1] = -real(phik[3][1])
+            A[2,2] = -real(phik[4][1])
+            A[2,3] =  real(phik[1][1])
+            A[2,4] =  real(phik[2][1])
+
+            A[3,1] =  real(phik[2][1])
+            A[3,2] = -real(phik[1][1])
+            A[3,3] = -real(phik[4][1])
+            A[3,4] =  real(phik[3][1])
+
+            A[4,1] = real(phik[1][1])
+            A[4,2] = real(phik[2][1])
+            A[4,3] = real(phik[3][1])
+            A[4,4] = real(phik[4][1])
+
+            # construct Gauss matrix equation elements: c
+            c = -A\f
+            #@show A * c + f 
+            for a in 1:4
+                piik[a][1] = c[a] + 0*im
+            end
+            #
+            # set values in simdata
+            #  
+            # phi
+            simdata[i].phix[1] = real.(ifft(phik[1])) * sqrt(disc.vol) #df.phi1x[idx]
+            simdata[i].phix[2] = real.(ifft(phik[2])) * sqrt(disc.vol) #df.phi2x[idx]
+            simdata[i].phix[3] = real.(ifft(phik[3])) * sqrt(disc.vol) #df.phi3x[idx]
+            simdata[i].phix[4] = real.(ifft(phik[4])) * sqrt(disc.vol) #df.phi4x[idx]
+            # pi
+            simdata[i].piix[1] = real.(ifft(piik[1])) * sqrt(disc.vol) #df.pii1x[idx]
+            simdata[i].piix[2] = real.(ifft(piik[2])) * sqrt(disc.vol) #df.pii2x[idx]
+            simdata[i].piix[3] = real.(ifft(piik[3])) * sqrt(disc.vol) #df.pii3x[idx]
+            simdata[i].piix[4] = real.(ifft(piik[4])) * sqrt(disc.vol) #df.pii4x[idx]
+        end
     
-    #initSimDataSerial!(model, simdata, tmpdata, disc, num)
-    initSimDataParallel!(model, simdata, tmpdata, disc, num)
+        initSimDataParallel!(model, simdata, tmpdata, disc, num) # does: initU!, initMCPhiandPi!, initE!
+        # note: initMCPhiandPi! constructs simdata.Phi / Pii from the piix / phix read from the file. additionally it calcs rho  
+    end
 
     simsetup.lastEvolStep = 2
     measure!(thesolution,tmpdata,2)

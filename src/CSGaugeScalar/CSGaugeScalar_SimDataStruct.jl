@@ -89,17 +89,17 @@ end
     Phi2ktmp::Array
     Phi4ktmp::Array
     # Electric field propagator helpers
-    Eaix::Vector{Vector{clattice{sdim}}}
+    Eaix::Vector{Vector{clattice{sdim}}} # Acttually no clattice required, it is a real field : Aaix[a][i][idx] = tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i])) ) / (2*model.g)
     Eaik::Vector{Vector{clattice{sdim}}}
-    E2k::Matrix
-    E2L::clattice{sdim}
-    E2T::clattice{sdim}
+    E2k::Array{Array{ComplexF64}, 3} #Matrix
+    E2L::Array{Float64, 3} 
+    E2T::Array{Float64, 3}
     # Gauge field propagator helpers
-    Aaix::Vector{Vector{clattice{sdim}}}
+    Aaix::Vector{Vector{clattice{sdim}}} # Acttually no clattice required, it is a real field : Aaix[a][i][idx] = tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i])) ) / (2*model.g)
     Aaik::Vector{Vector{clattice{sdim}}}
-    Dk::Matrix
-    DL::clattice{sdim}
-    DT::clattice{sdim}
+    Dk::Array{Array{ComplexF64}, 3} #Matrix
+    DL::Array{Float64, 3}
+    DT::Array{Float64, 3}
     ## FFT plans
     ftplan::AbstractFFTs.Plan#FFTW.cFFTWPlan
     iftplan::AbstractFFTs.Plan#AbstractFFTs.ScaledPlan
@@ -111,8 +111,8 @@ end
     Nx::Int64
     sdim::Int64
     # longitudinal/transverse projection operators
-    P_L::Matrix
-    P_T::Matrix
+    P_L::Array{Array{Float64}, 3} #Matrix
+    P_T::Array{Array{Float64}, 3} #Matrix
     function SU2HiggsTmpData(simdata::CSGaugeScalarSimData)
         @unpack Nx, sdim = simdata
         rhok = 0*[createclattice(Nx, sdim),createclattice(Nx, sdim),createclattice(Nx, sdim),createclattice(Nx, sdim)]
@@ -140,34 +140,25 @@ end
         #
         Eaix   = Vector{Vector{clattice}}(undef,3)
         Eaik   = Vector{Vector{clattice}}(undef,3)
-        E2k    = Matrix{clattice}(undef,3,3)
-        E2L    = 0*createclattice(Nx, sdim)
-        E2T    = 0*createclattice(Nx, sdim)
+        E2k = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx)
+        E2L = zeros(Nx,Nx,Nx)
+        E2T = zeros(Nx,Nx,Nx)
         #
         Aaix   = Vector{Vector{clattice}}(undef,3)
         Aaik   = Vector{Vector{clattice}}(undef,3)
-        Dk     = Matrix{clattice}(undef,3,3)
-        DL     = 0*createclattice(Nx, sdim)
-        DT     = 0*createclattice(Nx, sdim)
-        P_L    = Matrix{clattice}(undef,3,3)
-        P_T    = Matrix{clattice}(undef,3,3)
+        Dk = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx)
+        DL = zeros(Nx,Nx,Nx)
+        DT = zeros(Nx,Nx,Nx)
+
         for a in 1:3
             Eaix[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
             Eaik[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
             Aaix[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
             Aaik[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
         end
-        for i in 1:3
-            for j in 1:3
-                Dk[i,j]  = 0 * createclattice(Nx, sdim)
-                E2k[i,j] = 0 * createclattice(Nx, sdim)
-                P_L[i,j] = 0 * createclattice(Nx, sdim)
-                P_T[i,j] = 0 * createclattice(Nx, sdim)
-            end
-        end
-        #
-        ftplan  = plan_fft(E2L) # NB: Not in-place FFTs
-        iftplan = plan_ifft(E2L)
+       #
+        ftplan  = plan_fft(Ga2Latt)  # NB: Not in-place FFTs
+        iftplan = plan_ifft(Ga2Latt)
         #
         plaq     = [SMatrix{2,2}(0,0,0,0), SMatrix{2,2}(0,0,0,0)]
         plaqsum  = [SMatrix{2,2}(0,0,0,0)]
@@ -180,36 +171,81 @@ end
 	            nvalues[i+1] = i  # julia indexing
 	        end
 	    end
-        #
-        # fill P_L & P_T
-        for i in 1:3 # i,j directional indices
-           for j in 1:3
-               for nx in 1:Nx
-                   for ny in 1:Nx
-                       for nz in 1:Nx
-                           #p_phys = [ 2*sin(pi*nvalues[nx]/Nx), 2*sin(pi*nvalues[ny]/Nx), 2*sin(pi*nvalues[nz]/Nx)]
-                           #p_phys = -im * [ exp(2*pi*nvalues[nx]/Nx)-1, exp(2*pi*nvalues[ny]/Nx)-1, exp(2*pi*nvalues[nz]/Nx)-1 ]
-                           p_phys = -im * [ exp(2*pi*im*(nx-1)/Nx)-1, exp(2*pi*im*(ny-1)/Nx)-1, exp(2*pi*im*(nz-1)/Nx)-1 ]
-                           p2 = sum( p_phys .^2 )
 
-                            if p2 == 0
-                               P_L[i,j][nx,ny,nz] = 1
-                            else
-                               P_L[i,j][nx,ny,nz] =  p_phys[i] * conj(p_phys[j]) / p2
-                            end
-                        end
-                    end
+        # projection operators - at each point in k space a 3x3 projection operator
+        P_L = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
+        P_T = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
+        for i in 1:Nx # "in k space"
+            for j in 1:Nx # "in k space"
+                for k in 1:Nx # "in k space"
+                    P_L[i,j,k] = zeros(3,3) 
+                    P_T[i,j,k] = zeros(3,3)
+                    E2k[i,j,k] = zeros(ComplexF64,3,3)
+                    Dk[i,j,k]  = zeros(ComplexF64,3,3)
                 end
-                if i==j
-                    P_T[i,j] .= (1 .- P_L[i,j])
-                else
-                    P_T[i,j] .= - P_L[i,j]
-                end
-           end
+            end
         end
-        #@show sum(P_T[2,2] + P_L[2,2])
-        #@show sum(P_T[2,1] + P_L[2,1])
-        #@show sum(P_T[2,3] + P_L[2,3])
+        # momenta based on central derivative
+        momentavalues = sin.(nvalues*(2*pi)/Nx) 
+        # mometa at index 0 and Int(Nx/2) + 1 are 0 (yes, there are 2).Set them manually (otherwise the Nx/2+1 is like 10^-16)
+        momentavalues[1] = 0
+        momentavalues[ Int(Nx/2) + 1 ] = 0
+
+        for i in 1:Nx # "in k space" # x component
+            for j in 1:Nx # "in k space" # y component
+                for k in 1:Nx # "in k space" # y component
+                    p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+                    if p2 == 0
+                        P_T[i,j,k][1,1] = 1 #xx component
+                        P_T[i,j,k][2,2] = 1 #yy component
+                        P_T[i,j,k][3,3] = 1 #zz component
+                                            
+                        P_T[i,j,k][1,2] = 0 #xy component
+                        P_T[i,j,k][1,3] = 0 #xz component
+                        P_T[i,j,k][2,1] = 0 #yx component
+                        P_T[i,j,k][2,3] = 0 #yz component
+                        P_T[i,j,k][3,1] = 0 #zx component
+                        P_T[i,j,k][3,2] = 0 #zy component
+                
+                        P_L[i,j,k][1,1] = 0 #xx component
+                        P_L[i,j,k][2,2] = 0 #yy component
+                        P_L[i,j,k][3,3] = 0 #zz component
+                                            
+                        P_L[i,j,k][1,2] = 0 #xy component
+                        P_L[i,j,k][1,3] = 0 #xz component
+                        P_L[i,j,k][2,1] = 0 #yx component
+                        P_L[i,j,k][2,3] = 0 #yz component
+                        P_L[i,j,k][3,1] = 0 #zx component
+                        P_L[i,j,k][3,2] = 0 #zy component
+                   else
+                        # P_T
+                        P_T[i,j,k][1,1] = 1 - momentavalues[i] * momentavalues[i] / p2 #xx component
+                        P_T[i,j,k][2,2] = 1 - momentavalues[j] * momentavalues[j] / p2 #yy component
+                        P_T[i,j,k][3,3] = 1 - momentavalues[k] * momentavalues[k] / p2 #zz component
+
+                        P_T[i,j,k][1,2] =   - momentavalues[i] * momentavalues[j] / p2 #xy component
+                        P_T[i,j,k][1,3] =   - momentavalues[i] * momentavalues[k] / p2 #xz component
+                        P_T[i,j,k][2,1] =   - momentavalues[j] * momentavalues[i] / p2 #yx component
+                        P_T[i,j,k][2,3] =   - momentavalues[j] * momentavalues[k] / p2 #yz component
+                        P_T[i,j,k][3,1] =   - momentavalues[k] * momentavalues[i] / p2 #zx component
+                        P_T[i,j,k][3,2] =   - momentavalues[k] * momentavalues[j] / p2 #zy component
+
+                        # P_L
+                        P_L[i,j,k][1,1] = momentavalues[i] * momentavalues[i] / p2 #xx component
+                        P_L[i,j,k][2,2] = momentavalues[j] * momentavalues[j] / p2 #yy component
+                        P_L[i,j,k][3,3] = momentavalues[k] * momentavalues[k] / p2 #zz component
+
+                        P_L[i,j,k][1,2] = momentavalues[i] * momentavalues[j] / p2 #xy component
+                        P_L[i,j,k][1,3] = momentavalues[i] * momentavalues[k] / p2 #xz component
+                        P_L[i,j,k][2,1] = momentavalues[j] * momentavalues[i] / p2 #yx component
+                        P_L[i,j,k][2,3] = momentavalues[j] * momentavalues[k] / p2 #yz component
+                        P_L[i,j,k][3,1] = momentavalues[k] * momentavalues[i] / p2 #zx component
+                        P_L[i,j,k][3,2] = momentavalues[k] * momentavalues[j] / p2 #zy component
+                   end
+                end
+            end
+        end
+
         return new{sdim}(   rhok, chik, rhox, chix,
                             EelecLatt, EmagnLatt, EscalLattKin, EscalLattPot,
                             Ga, GaEcont, GaRelNumerator, GaRel, Ga2Latt, GaRelLatt, 
@@ -218,4 +254,3 @@ end
                             ftplan, iftplan, plaq, plaqsum, k2values, nvalues, Nx, sdim, P_L, P_T )
     end
  end
-

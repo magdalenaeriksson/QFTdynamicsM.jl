@@ -14,28 +14,32 @@ include("CSGaugeScalar_ModelExpansionRenormalization.jl")
 #
 function getParameterstring(modelfile::CSGaugeScalarFile, parameters)
     # Model
-    if parameters["Mod"]=="CS_SUNgaugeScalar" parameterstring = "SU(" * string(Int64(parameters["N"])) * ")gaugeScalar"  end
-    if parameters["Mod"]=="CS_U1gaugeScalar" parameterstring = "U(1)gaugeScalar" end
+    if parameters["Mod"]=="CS_SUNgaugeScalar" parameterstring = "SU" * string(Int64(parameters["N"])) * "gaugeScalar"  end
+    if parameters["Mod"]=="CS_U1gaugeScalar" parameterstring = "U1gaugeScalar" end
     parameterstring *= parameters["Pexp"]
-    parameterstring *= "|Lambda="   * string( parameters["Lambda"]	) 
-    parameterstring *= "|g="        * string( parameters["g"])
-    parameterstring *= "|"          * parameters["Reno"]
+    parameterstring *= "_Lambda"   * string( Int64(parameters["Lambda"] *1000 )	) 
+    parameterstring *= "_g"        * string( Int64(parameters["g"] *1000      )   )
+    parameterstring *= "_"          * parameters["Reno"]
     if parameters["init"]=="Thermo" 
-        parameterstring *= "|T=" * string(Int64(parameters["T"])) 
+        parameterstring *= "_T" * string( Int64(parameters["T"]*10)) 
     elseif parameters["init"]=="Pnr" 
-        parameterstring *= "|n=" * string(Int64(parameters["n"]))
+        parameterstring *= "_n" * string( Int64(parameters["n"]*10))
+    elseif parameters["init"]=="MCThermo" 
+        parameterstring *= "_MCT" * string(Int64(parameters["T"]*10)) 
+    elseif parameters["init"]=="MCPnr" 
+        parameterstring *= "_MCn" * string(Int64(parameters["n"]*10))
     else
-        parameterstring *= "|" * parameters["init"]
+        parameterstring *= "_" * parameters["init"]
     end
-    parameterstring *= "|Nx="       * string(parameters["Nx"]) 
-    parameterstring *= "|sdim=" 	* string(parameters["sdim"]) 
-    parameterstring *= "|Nsteps="   * string(parameters["Nsteps"])  
-    parameterstring *= "|dt="    	* string(parameters["dt"])  
-    parameterstring *= "|m="     	* string(parameters["Mass"])
+    parameterstring *= "_Nx"        * string(parameters["Nx"]) 
+    parameterstring *= "_sdim" 	    * string(parameters["sdim"]) 
+    parameterstring *= "_Nsteps"    * string(parameters["Nsteps"])  
+    parameterstring *= "_dt"    	* string(Int64(parameters["dt"]   * 1000)) 
+    parameterstring *= "_m"     	* string(Int64(parameters["Mass"] * 100) )
     #parameterstring *= "|NstepsinMemory="    * string(parameters["NstepsinMemory"])
-    parameterstring *= "|seed="     * string(Int64(parameters["seed"]))
-    parameterstring *= "|Runs="    * string( Int64(parameters["Runs"])	)
-    if parameters["tag"]!= "" parameterstring *= "|" * parameters["tag"] end
+    parameterstring *= "_seed"     * string(Int64(parameters["seed"]))
+    parameterstring *= "_Runs"    * string( Int64(parameters["Runs"])	)
+    if parameters["tag"]!= "" parameterstring *= "_" * parameters["tag"] end
 end
 
 function QFTdynamicsProblem(modelfile::CSGaugeScalarFile, parameters)
@@ -78,6 +82,8 @@ function QFTdynamicsProblem(modelfile::CSGaugeScalarFile, parameters)
     # Initialization
     if parameters["init"] == "Thermal"  init = CSGaugeScalarThermal(parameters["T"])  end
     if parameters["init"] == "Pnr"      init = CSGaugeScalarParticle(parameters["n"]) end
+    if parameters["init"] == "MCThermal"  init = CSGaugeScalarThermalMC(parameters["T"])  end
+    if parameters["init"] == "MCPnr"      init = CSGaugeScalarParticleMC(parameters["n"]) end
     if parameters["init"] == "TopHatT1" init = CSGaugeScalarTopHatT1() end
     if parameters["init"] == "TopHatT2" init = CSGaugeScalarTopHatT2() end
     if parameters["init"] == "TopHatT3" init = CSGaugeScalarTopHatT3() end
@@ -124,26 +130,9 @@ function QFTdynamicsSolution(modelfile::CSGaugeScalarFile, problem::QFTdynamicsP
         # set simdata
         #simdata = Vector{CSGaugeScalarSimData}(undef,problem.num.Runs)
         simdata = Vector{SU2HiggsSimData}(undef,problem.num.Runs)
-        # load samples from csv, we need one sample for each run
-        #location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples90_B50_ith5_test"
-        location = "/Users/magdalenaeriksson/code/2PIcode/data/MCSampledIC_Nx32_sdim3_Mass100_n0_Samples916_B42_ith2_test"
         for i in 1:problem.num.Runs
             simdata[i] = SU2HiggsSimData(problem.disc.Nx, problem.disc.sdim)
-            df = CSV.read(location * "/Sample_" * string(i) * ".csv", DataFrame)
-            for idx in 1:problem.disc.vol
-                # phi
-                simdata[i].phix[1][idx] = df.phi1x[idx]
-                simdata[i].phix[2][idx] = df.phi2x[idx]
-                simdata[i].phix[3][idx] = df.phi3x[idx]
-                simdata[i].phix[4][idx] = df.phi4x[idx]
-                # pi
-                simdata[i].piix[1][idx] = df.pii1x[idx]
-                simdata[i].piix[2][idx] = df.pii2x[idx]
-                simdata[i].piix[3][idx] = df.pii3x[idx]
-                simdata[i].piix[4][idx] = df.pii4x[idx]
-            end
         end
-
         # set tmpdata
         #tmpdata = Vector{CSGaugeScalarTmpData}(undef,problem.num.Runs)
         tmpdata = Vector{SU2HiggsTmpData}(undef,problem.num.Runs)

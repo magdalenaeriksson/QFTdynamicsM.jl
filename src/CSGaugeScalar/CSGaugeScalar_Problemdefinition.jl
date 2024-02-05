@@ -41,6 +41,14 @@ end
 struct CSGaugeScalarTopHatT1 <: CSGaugeScalarInitialization end
 struct CSGaugeScalarTopHatT2 <: CSGaugeScalarInitialization end
 struct CSGaugeScalarTopHatT3 <: CSGaugeScalarInitialization end
+struct CSGaugeScalarParticleMC <: CSGaugeScalarInitialization
+  n::Float64
+  #samplesfile::String #maybe something like this would be nice
+end
+struct CSGaugeScalarThermalMC <: CSGaugeScalarInitialization
+  T::Float64
+  #samplesfile::String #maybe something like this would be nice
+end
 
 #
 # Numerics 
