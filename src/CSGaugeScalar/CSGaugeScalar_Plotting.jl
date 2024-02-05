@@ -8,7 +8,7 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     # line
     linealpha = 1
     linewidth = 1.5
-    #linestyles = [:solid, :dash, :dot, :dashdot, :dashdotdot]
+    linestyles = [:solid, :dash, :dot, :dashdot, :dashdotdot]
     # marker
     markersize = 2
     marker = (:o, markersize)
