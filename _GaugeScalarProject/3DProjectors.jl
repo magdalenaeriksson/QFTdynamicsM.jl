@@ -1,7 +1,7 @@
 ################################################################################################################################################
 # Figuring projections out in 3D
 #
-#   - Skript starts with a bunch of examples 1.-6 (commented out)
+#   - Script starts with a bunch of examples 1.-6 (commented out)
 #   - Then I create a matrix build from PL and PT operators + a random matrix 
 #       I obtain the scalar factors by projecting with PL and PT, and then calculating the proportionality factor elementwise
 #       If there where no random matrix the proportionality factor matix would have the same value everywhere.
@@ -46,8 +46,8 @@ plots = Dict()
 #    end
 #end 
 
-P_L = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
-P_T = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
+P_L = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
+P_T = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
 for i in 1:Nx # "in k space"
     for j in 1:Nx # "in k space"
         for k in 1:Nx # "in k space"
@@ -68,7 +68,8 @@ for i in 0:(Nx-1)
 end
 
 # momenta based on central derivative
-momentavalues = sin.(nvalues*(2*pi)/Nx) 
+#momentavalues = sin.(nvalues*(2*pi)/Nx) 
+momentavalues = -im * (exp.(2*pi*im*nvalues/Nx) .- 1)
 # mometa at index 0 and Int(Nx/2) + 1 are 0 (yes, there are 2).Set them manually (otherwise the Nx/2+1 is like 10^-16)
 momentavalues[1] = 0
 momentavalues[ Int(Nx/2) + 1 ] = 0
@@ -76,7 +77,8 @@ momentavalues[ Int(Nx/2) + 1 ] = 0
 for i in 1:Nx # "in k space" # x component
     for j in 1:Nx # "in k space" # y component
         for k in 1:Nx # "in k space" # y component
-            p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+            #p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+            p2 = momentavalues[i]*conj(momentavalues[i]) + momentavalues[j]*conj(momentavalues[j]) + momentavalues[k]*conj(momentavalues[k])
             if p2 == 0
                 P_T[i,j,k][1,1] = 1 #xx component
                 P_T[i,j,k][2,2] = 1 #yy component
@@ -101,28 +103,28 @@ for i in 1:Nx # "in k space" # x component
                 P_L[i,j,k][3,2] = 0 #zy component
            else
                 # P_T
-                P_T[i,j,k][1,1] = 1 - momentavalues[i] * momentavalues[i] / p2 #xx component
-                P_T[i,j,k][2,2] = 1 - momentavalues[j] * momentavalues[j] / p2 #yy component
-                P_T[i,j,k][3,3] = 1 - momentavalues[k] * momentavalues[k] / p2 #zz component
+                P_T[i,j,k][1,1] = 1 - momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                P_T[i,j,k][2,2] = 1 - momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                P_T[i,j,k][3,3] = 1 - momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
 
-                P_T[i,j,k][1,2] =   - momentavalues[i] * momentavalues[j] / p2 #xy component
-                P_T[i,j,k][1,3] =   - momentavalues[i] * momentavalues[k] / p2 #xz component
-                P_T[i,j,k][2,1] =   - momentavalues[j] * momentavalues[i] / p2 #yx component
-                P_T[i,j,k][2,3] =   - momentavalues[j] * momentavalues[k] / p2 #yz component
-                P_T[i,j,k][3,1] =   - momentavalues[k] * momentavalues[i] / p2 #zx component
-                P_T[i,j,k][3,2] =   - momentavalues[k] * momentavalues[j] / p2 #zy component
+                P_T[i,j,k][1,2] =   - momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                P_T[i,j,k][1,3] =   - momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                P_T[i,j,k][2,1] =   - momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                P_T[i,j,k][2,3] =   - momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                P_T[i,j,k][3,1] =   - momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                P_T[i,j,k][3,2] =   - momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
 
                 # P_L
-                P_L[i,j,k][1,1] = momentavalues[i] * momentavalues[i] / p2 #xx component
-                P_L[i,j,k][2,2] = momentavalues[j] * momentavalues[j] / p2 #yy component
-                P_L[i,j,k][3,3] = momentavalues[k] * momentavalues[k] / p2 #zz component
+                P_L[i,j,k][1,1] = momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                P_L[i,j,k][2,2] = momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                P_L[i,j,k][3,3] = momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
 
-                P_L[i,j,k][1,2] = momentavalues[i] * momentavalues[j] / p2 #xy component
-                P_L[i,j,k][1,3] = momentavalues[i] * momentavalues[k] / p2 #xz component
-                P_L[i,j,k][2,1] = momentavalues[j] * momentavalues[i] / p2 #yx component
-                P_L[i,j,k][2,3] = momentavalues[j] * momentavalues[k] / p2 #yz component
-                P_L[i,j,k][3,1] = momentavalues[k] * momentavalues[i] / p2 #zx component
-                P_L[i,j,k][3,2] = momentavalues[k] * momentavalues[j] / p2 #zy component
+                P_L[i,j,k][1,2] = momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                P_L[i,j,k][1,3] = momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                P_L[i,j,k][2,1] = momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                P_L[i,j,k][2,3] = momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                P_L[i,j,k][3,1] = momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                P_L[i,j,k][3,2] = momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
            end
         end
     end
@@ -134,7 +136,7 @@ jhat = 3
 khat = 6
 
 ###########################################################################################
-## 1. Apply projector to momentum
+## 1. Apply projector to momentum   
 ###########################################################################################
 #println("Apply projector to momentum"); flush(stdout)
 #amomentum = [ momentavalues[ihat], momentavalues[jhat], momentavalues[khat] ]
@@ -251,14 +253,14 @@ for (i, r) in enumerate(rfactor)
     # T
     D_T = P_T[ihat,jhat,khat] * D
     # quantify as a number and also the deviation in them
-    isomat = D_T ./ P_T[ihat,jhat,khat] 
+    isomat = real(D_T ./ P_T[ihat,jhat,khat] )
     isoT[i] = mean(isomat)
     isoT_std[i] = std(isomat)
 
     # L
     D_L = P_L[ihat,jhat,khat] * D
     # quantify as a number and also the deviation in them
-    isomat = D_L ./ P_L[ihat,jhat,khat]
+    isomat = real(D_L ./ P_L[ihat,jhat,khat])
     isoL[i] = mean(isomat)
     isoL_std[i] = std(isomat)
 end
@@ -318,6 +320,9 @@ plots["PEigenvalues_hermitian_std.png"] = plot(xlabel="r", ylabel="std of EVs of
 plot!(plots["PEigenvalues_hermitian_std.png"],  rfactor, isoL_std, label = "measured stddev L EV", color=:blue, linewidth=2, linestyle=:solid) 
 plot!(plots["PEigenvalues_hermitian_std.png"],  rfactor, isoT_std, label = "measured stddev T EV", color=:red , linewidth=2, linestyle=:solid) 
 
+if isinteractive() == true
+    displayplots(plots)
+end 
 # save plots
 mkpath(plotpath * "/" * plotsubdirectory)
 mkpath(plotpath * "/" * plotsubdirectory * "/pdf")
