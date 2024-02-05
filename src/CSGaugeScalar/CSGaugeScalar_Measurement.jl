@@ -201,15 +201,15 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
             Dk[i,j]  ./= 3*vol
             E2k[i,j] ./= 3*vol
             # compute longitudinal and transverse propagators (P_L & P_T pre-calculated in tmpdata)
-            DL  .+= P_L[i,j] .* Dk[i,j] 
-            E2L .+= P_L[i,j] .* E2k[i,j]
-            DT  .+= P_T[i,j] .* Dk[i,j] 
-            E2T .+= P_T[i,j] .* E2k[i,j]
+            DL  .+= (P_L[i,j] .* Dk[i,j] )
+            E2L .+= (P_L[i,j] .* E2k[i,j])
+            DT  .+= (P_T[i,j] .* Dk[i,j] )
+            E2T .+= (P_T[i,j] .* E2k[i,j])
         end
     end
 
     #@show sum(Phi2ktmp)/vol
-    #@show sum(DT)/vol
+    #@show sum(P_L[1,1] * Dk[1,1])
     #@show sum(DT)/vol
     #@show sum(real(E2L))
     #@show sum(real(E2T))
@@ -220,11 +220,11 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
             idx = disc.fftwhelper[i].ind[j]
             meas.Phi2k[i] += Phi2ktmp[idx]
             meas.Phi4k[i] += Phi4ktmp[idx]
-            meas.E2k[i] += E2k[1,1][idx] # for example, just a measarr to check stuff
+            meas.E2k[i] += (E2k[1,1][idx]+E2k[2,2][idx]+E2k[3,3][idx])/3 # for example, just a measarr to check stuff
             meas.DLk[i] += abs( DL[idx])
             meas.DTk[i] += abs( DT[idx])
-            #meas.EpropL[i] += real( E2L[idx] )
-            #meas.EpropT[i] += real( E2T[idx] )
+            meas.EpropL[i] += abs( E2L[idx] )
+            meas.EpropT[i] += abs( E2T[idx] )
         end
         meas.Phi2k[i] /= disc.fftwhelper[i].deg
         meas.Phi4k[i] /= disc.fftwhelper[i].deg
