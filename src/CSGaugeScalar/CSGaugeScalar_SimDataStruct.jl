@@ -189,8 +189,8 @@ end
                        for nz in 1:Nx
                            #p_phys = [ 2*sin(pi*nvalues[nx]/Nx), 2*sin(pi*nvalues[ny]/Nx), 2*sin(pi*nvalues[nz]/Nx)]
                            #p_phys = -im * [ exp(2*pi*nvalues[nx]/Nx)-1, exp(2*pi*nvalues[ny]/Nx)-1, exp(2*pi*nvalues[nz]/Nx)-1 ]
-                           p_phys = -im * [ exp(2*pi*im*(nx-1)/Nx)-1, exp(2*pi*im*(ny-1)/Nx)-1, exp(2*pi*im*(nz-1)/Nx)-1 ]
-                           p2 = sum( p_phys .^2 )
+                           p_phys = [ -im * exp(2*pi*im*(nx-1)/Nx)-1, -im * exp(2*pi*im*(ny-1)/Nx)-1, -im * exp(2*pi*im*(nz-1)/Nx)-1 ]
+                           p2 = sum( abs2.(p_phys) .^2 )
 
                             if p2 == 0
                                P_L[i,j][nx,ny,nz] = 1
