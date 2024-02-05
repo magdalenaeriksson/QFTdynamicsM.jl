@@ -8,7 +8,7 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     # line
     linealpha = 1
     linewidth = 1.5
-    #linestyles = [:solid, :dash, :dot, :dashdot, :dashdotdot]
+    linestyles = [:solid, :dash, :dot, :dashdot, :dashdotdot]
     # marker
     markersize = 2
     marker = (:o, markersize)
@@ -32,26 +32,34 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     ####################################################################################################
     ## time plots
     ## 
-    if mode == "c" plots["Phi2t.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
+    if mode == "c" plots["Phi2t.png"] = plot(xlabel = L"tm",ylabel =" ")#yerr=[element.Phi2k_err[1] for element in measurearray]
     else
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray], ls=line, marker=(:x,2),markercolor=color[2], lc=color[2], markerstrokecolor=:auto, label="mode 1")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray],  ls=line, lc=color[3], markerstrokecolor=:auto, label="mode 123")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray], ls=line, lc=color[4], markerstrokecolor=:auto, label="mode 500")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[1] for element in measurearray], ls=line, marker=(:x,1),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="Emode 1")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[123] for element in measurearray],  ls=line, lc=color[5], markerstrokecolor=:auto, label="Emode 123")
-        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[500] for element in measurearray], ls=line, lc=color[6], markerstrokecolor=:auto, label="Emode 500")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[1] for element in measurearray],    ls=line, lc=color[1], markerstrokecolor=:auto, label=L"\Phi^2[1]")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[123] for element in measurearray],  ls=:dash, lc=color[2], markerstrokecolor=:auto, label=L"\Phi^2[123]")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.Phi2k[500] for element in measurearray],  ls=:dashdot, lc=color[3], markerstrokecolor=:auto, label=L"\Phi^2[500]")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[1] for element in measurearray],      ls=line, lc=color[4], markerstrokecolor=:auto, label=L"E^2[1]")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[123] for element in measurearray],    ls=:dash, lc=color[5], markerstrokecolor=:auto, label=L"E^2[123]")
+        plot!(plots["Phi2t.png"],[element.time for element in measurearray], [element.E2k[500] for element in measurearray],    ls=:dashdot, lc=color[6], markerstrokecolor=:auto, label=L"E^2[500]")
     end
-    if mode == "c" plots["E11.png"] = plot(xlabel = L"tm",ylabel =L"<|E_{11}(t;\mathbf{p})|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
+    if mode == "c" plots["DLvsDT.png"] = plot(xlabel = L"tm",ylabel =" ")#yerr=[element.Phi2k_err[1] for element in measurearray]
     else
-        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[1] for element in measurearray], ls=line, marker=(:x,1),markercolor=color[1], lc=color[1], markerstrokecolor=:auto, label="Emode 1")
-        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[123] for element in measurearray],  ls=line, lc=color[5], markerstrokecolor=:auto, label="Emode 123")
-        plot!(plots["E11.png"],[element.time for element in measurearray], [element.EpropL[500] for element in measurearray], ls=line, lc=color[6], markerstrokecolor=:auto, label="Emode 500")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray],     ls=line, lc=color[1], markerstrokecolor=:auto,    label="DL[1]")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray],     ls=line, lc=color[2], markerstrokecolor=:auto,    label="DT[1]")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DLk[123] for element in measurearray],   ls=:dash, lc=color[1], markerstrokecolor=:auto,   label="DL[123]")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DTk[123] for element in measurearray],   ls=:dash, lc=color[2], markerstrokecolor=:auto,   label="DT[123]")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DLk[500] for element in measurearray],   ls=:dashdot, lc=color[1], markerstrokecolor=:auto,   label="DL[500]")
+        plot!(plots["DLvsDT.png"],[element.time for element in measurearray], [element.DTk[500] for element in measurearray],   ls=:dashdot, lc=color[2], markerstrokecolor=:auto,   label="DT[500]")
     end
-    if mode == "c" plots["Es.png"] = plot(xlabel = L"tm",ylabel =L"<|E_{11}(t;\mathbf{p})|^2>/V")#yerr=[element.Phi2k_err[1] for element in measurearray]
+    if mode == "c" plots["TvsL.png"] = plot(xlabel = L"tm",ylabel =" ")#yerr=[element.Phi2k_err[1] for element in measurearray]
     else
-        plot!(plots["Es.png"],[element.time for element in measurearray], [element.E2k[1] for element in measurearray], ls=line,  lc=color[1], markerstrokecolor=:auto, label="E11[0]")
-        plot!(plots["Es.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray],  ls=line, lc=color[2], markerstrokecolor=:auto, label="E22[0]")
-        plot!(plots["Es.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto,  label="E33[0]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.EpropL[1] for element in measurearray],    ls=line, lc=color[1], markerstrokecolor=:auto,   label="EL[1]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.EpropT[1] for element in measurearray],    ls=line, lc=color[2], markerstrokecolor=:auto,   label="ET[1]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.DLk[1] for element in measurearray],       ls=line, lc=color[3], markerstrokecolor=:auto,   label="DL[1]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.DTk[1] for element in measurearray],       ls=line, lc=color[4], markerstrokecolor=:auto,   label="DT[1]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.EpropL[123] for element in measurearray],  ls=:dash, lc=color[1], markerstrokecolor=:auto,  label="EL[123]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.EpropT[123] for element in measurearray],  ls=:dash, lc=color[2], markerstrokecolor=:auto,  label="ET[123]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.DLk[123] for element in measurearray],     ls=:dash, lc=color[3], markerstrokecolor=:auto,  label="DL[123]")
+        plot!(plots["TvsL.png"],[element.time for element in measurearray], [element.DTk[123] for element in measurearray],     ls=:dash, lc=color[4], markerstrokecolor=:auto,  label="DT[123]")
     end
     # if mode == "c" plots["Phi2t2.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
     # else
