@@ -60,7 +60,7 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
      else
         plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Eelec/element.Etot for element in measurearray], ls=line, lc=color[1],  markerstrokecolor=:auto, label="elec")
         plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.Emagn/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="magn")
-        #plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
+        plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
         plot!(plots["EnergyFractions.png"],[element.time for element in measurearray], [element.EscalPot/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal pot")
      end
      if mode == "c" plots["EnergyTot.png"] = plot(xlabel = L"tm",ylabel ="Total energy")
@@ -69,16 +69,13 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
      end
      if mode == "c" plots["EnergyScalar.png"] = plot(xlabel = L"tm",ylabel ="Energy fractions")
      else
-        plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.Etot/element.Etot for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="total")
-        plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [(element.EscalKin + element.EscalPot)/element.Etot for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="scal tot")
-        plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.EscalKin/element.Etot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal kin")
-        #plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [10*element.EscalPot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="10xpot")
+        plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.EscalPot for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="scal pot")
+        plot!(plots["EnergyScalar.png"],[element.time for element in measurearray], [element.EscalKin for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="scal kin")
      end
      if mode == "c" plots["EnergyGauge.png"] = plot(xlabel = L"tm",ylabel ="Energy components")
      else
         plot!(plots["EnergyGauge.png"],[element.time for element in measurearray], [element.Eelec for element in measurearray], ls=line, lc=color[1], markerstrokecolor=:auto, label="elec")
         plot!(plots["EnergyGauge.png"],[element.time for element in measurearray], [element.Emagn for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="magn")
-        plot!(plots["EnergyGauge.png"],[element.time for element in measurearray], [element.EscalPot for element in measurearray], ls=line, lc=color[3], markerstrokecolor=:auto, label="scal pot")
      end
     # Scalar field
     if mode == "c" plots["Phi2_t.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
@@ -213,4 +210,119 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
     #     #plot!(plots["Gauge_k.png"],kvals, [0.5 / sqrt(k^2 + disc.Mass^2) for k in kvals], ls=line, lc=color[1], markerstrokecolor=:auto, label=L"\frac{1/2}{\omega_k}")
     # end
    ####################################################################################################
+end
+
+export plotScalarcomponentdata
+function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, style::Int64=1, label::String="test")
+    # linestyle
+    # line
+    linealpha = 1
+    linewidth = 1.5
+    linestyles = [:solid, :dash, :dot, :dashdot, :dashdotdot]
+    # marker
+    markersize = 2
+    marker = (:o, markersize)
+    #if style == 1 line = (:line, :solid, linealpha, linewidth); marker = (:x, markersize)           end
+    #if style == 2 line = (:line, :dash, linealpha, linewidth); marker = (:o, markersize)            end
+    #if style == 3 line = (:line, :dot, linealpha, linewidth); marker = (:star5, markersize)         end
+    #if style == 4 line = (:line, :dashdot, linealpha, linewidth); marker = (:circle, markersize)    end
+    if style == 1 line = :solid   ; marker = :x        end
+    if style == 2 line = :dash    ; marker = :o        end
+    if style == 3 line = :dot     ; marker = :star5    end
+    if style == 4 line = :dashdot ; marker = :circle   end
+    # define colors
+    color = ColorSchemes.Austria
+
+    # unpack
+    @unpack problem, simdata, measurearray, measurearrayofruns = thesolution
+    @unpack model, pexp, disc, init, reno, num, simsetup = problem
+
+    # time snapshots to plot
+    timeidx = [1, Int64(floor( length(measurearray)/2) ), length(measurearray)]
+    #if length(measurearray) > 2 timeidx = [1, Int64(floor( length(measurearray)/2) ), length(measurearray)] end
+    #if length(measurearray) > 4 timeidx = [1, Int64(floor( length(measurearray)/4) ), Int64(floor( length(measurearray)/2) ), Int64(floor( (3*length(measurearray))/4) ), length(measurearray)] end
+
+    # momenta to plot
+    nkLmomenta = 3
+    kLmax = disc.fftwhelper[end].lev
+    kLidx = zeros(Int64, nkLmomenta)
+    for i in 0:(length(kLidx)-1)
+        kLidx[i+1] = Int64(findmin(abs.([element.lev for element in disc.fftwhelper] .- ( (i/(nkLmomenta-1))*kLmax ) ))[2])
+    end
+    kLidx[1] = 2 # show the smallest IR mode, not the 0 mode
+
+    # levels
+    kvals = [el.lev for el in disc.fftwhelper]
+    tvals = [element.time for element in measurearray]
+
+    ####################################################################################################
+
+    ####################################################################################################
+    #plot
+    l = @layout [a b ; c d]
+    #theplot = plot(phiplot, phi2plot, piiplot, pii2plot, layout=l)
+
+
+    ####################################################################################################
+    # TIME EVOLUTION PLOTS
+    ####################################################################################################
+    # plot F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, kidx) in enumerate(kLidx)
+            plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], yerr=[element.phi2k_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+        end
+    end
+    plots["phi2comp_t.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"n_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, kidx) in enumerate(kLidx)
+            plot!(plotvector[i], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+        end
+    end
+    plots["particlenumber_t.png"] = plot(plotvector..., layout=l)
+    ####################################################################################################
+    ## SNAPSHOT PLOTS
+    ####################################################################################################
+    # plot F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            #plot!(plotvector[c], kvals, measurearray[tidx].phi2k[c], yerr=measurearray[tidx].phi2k_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[2:end], measurearray[tidx].phi2k[c][2:end], yerr=measurearray[tidx].phi2k_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["phi2comp.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"n_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            #plot!(plotvector[c], kvals, measurearray[tidx].n[c], yerr=measurearray[tidx].n_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[2:end], measurearray[tidx].n[c][2:end], yerr=measurearray[tidx].n_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["particlenumber.png"] = plot(plotvector..., layout=l)
+    # dispersion relation
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"\omega_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            #plot!(plotvector[c], kvals, measurearray[tidx].omega[c], yerr=measurearray[tidx].omega_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[2:end], measurearray[tidx].omega[c][2:end], yerr=measurearray[tidx].omega_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["dispersionrelation.png"] = plot(plotvector..., layout=l)
+    # plot Log (1 + 1/np)
+    plotvector = [plot(size=(1200,800), xlabel = L"\omega_k",ylabel = L"ln[1+1/n_k]",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            tmparray = (1 ./ measurearray[tidx].n[c]) .+ 1
+            idxlog = tmparray .> 0.001 # for 1/n + 1 values for which the log function works
+            #plot!(plotvector[c], kvals, measurearray[tidx].n[c][idxlog], yerr=measurearray[tidx].n_err[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            idxlog[1] = false # dont print the 0 mode 
+            plot!(plotvector[c], kvals[idxlog], measurearray[tidx].n[c][idxlog], yerr=measurearray[tidx].n_err[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["BEdistribution.png"] = plot(plotvector..., layout=l)
+
 end
