@@ -278,7 +278,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"n_k",) for i in 1:4]
     for c in 1:4 # iterte through components
         for (i, kidx) in enumerate(kLidx)
-            plot!(plotvector[i], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
         end
     end
     plots["particlenumber_t.png"] = plot(plotvector..., layout=l)
