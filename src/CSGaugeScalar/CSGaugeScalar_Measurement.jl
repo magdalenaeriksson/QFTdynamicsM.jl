@@ -17,6 +17,11 @@ Base.@kwdef mutable struct MeasurementCSGaugeScalar{N} <: Measurement
     DLk::Vector{Float64}=zeros(Float64, N )
     E2T::Vector{Float64}=zeros(Float64, N )
     E2L::Vector{Float64}=zeros(Float64, N )
+    # Scalar components
+    phi2k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    phi4k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    pi2k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    pi4k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
 end
 
 # add function to add single-run measurement arrays
@@ -35,7 +40,12 @@ function +(A::MeasurementCSGaugeScalar,B::MeasurementCSGaugeScalar)
                                     A.DTk       +B.DTk      ,
                                     A.DLk       +B.DLk      ,
                                     A.E2T       +B.E2T      ,
-                                    A.E2L       +B.E2L      )
+                                    A.E2L       +B.E2L      ,
+                                    # Scalar components
+                                    A.phi2k    .+B.phi2k    ,
+                                    A.phi4k    .+B.phi4k    ,
+                                    A.pi2k     .+B.pi2k     ,
+                                    A.pi4k     .+B.pi4k     )
 end
 
 # total (final) measurement array containing multiple averaged runs
@@ -59,12 +69,18 @@ Base.@kwdef mutable struct TotalMeasurementCSGaugeScalar{N} <: Measurement
     E2T::Vector{Float64}=zeros(Float64, N ) 
     E2L::Vector{Float64}=zeros(Float64, N ) 
 	# 
-    n::Vector{Float64}=zeros(Float64, N )
-    omega::Vector{Float64}=zeros(Float64, N )
+    phi2k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    phi4k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    phi2k_err::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    pi2k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    pi4k::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    pi2k_err::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    n::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    n_err::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    omega::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
+    omega_err::Vector{Vector{Float64}}=[zeros(Float64, N ) for i in 1:4]
     #
 	Phi2k_err::Vector{Float64}=zeros(Float64, N )
-	n_err::Vector{Float64}=zeros(Float64, N )
-	omega_err::Vector{Float64}=zeros(Float64, N )
 end
 
 
@@ -91,12 +107,64 @@ function combinedMeasurements(model::CSGaugeScalarModel, MeasArrOfRuns::Vector{M
     totalmeas.DLk      .= meassum.DLk       / num.Runs
     totalmeas.E2T      .= meassum.E2T       / num.Runs
     totalmeas.E2L      .= meassum.E2L       / num.Runs
+    for i in 1:4
+        totalmeas.phi2k[i] .= meassum.phi2k[i]  / num.Runs
+        totalmeas.phi4k[i] .= meassum.phi4k[i]  / num.Runs
+        totalmeas.pi2k[i]  .= meassum.pi2k[i]  / num.Runs
+        totalmeas.pi4k[i]  .= meassum.pi4k[i]  / num.Runs
+    end
     # new quantities
-    #totalmeas.n = 
-    #totalmeas.omega = 
+    for i in 1:4
+        # phi2k_err: first without sqrt, then check if any comp is <0, then sqrt
+	    totalmeas.phi2k_err[i]  .= (totalmeas.phi4k[i] .- totalmeas.phi2k[i].^2 ) ./ (num.Runs*disc.deg)
+        if sum(totalmeas.phi2k_err[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.phi2k_err[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.phi2k_err[i]  .= sqrt.( totalmeas.phi2k_err[i] )
+        end
+        # pi2k_err: first without sqrt, then check if any comp is <0, then sqrt
+	    totalmeas.pi2k_err[i]   .= ( totalmeas.pi4k[i]  .- totalmeas.pi2k[i].^2 ) ./ (num.Runs*disc.deg)
+        if sum(totalmeas.pi2k_err[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.pi2k_err[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.pi2k_err[i]  .= sqrt.( totalmeas.pi2k_err[i] )
+        end
+        # n: first without sqrt, then check if any comp is <0, then sqrt
+        totalmeas.n[i]          .= totalmeas.phi2k[i] .* totalmeas.pi2k[i] 
+        if sum(totalmeas.n[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.n[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.n[i]  .= sqrt.( totalmeas.n[i] ) .- 0.5
+        end
+        # n_err: first without sqrt, then check if any comp is <0, then sqrt
+	    totalmeas.n_err[i]      .= 0.25 * (totalmeas.pi2k[i] ./ totalmeas.phi2k[i]) .* totalmeas.phi2k_err[i].^2 + 0.25 * (totalmeas.phi2k[i] ./ totalmeas.phi2k[i]) .* totalmeas.pi2k_err[i].^2
+        if sum(totalmeas.n_err[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.n_err[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.n_err[i]  .= sqrt.( totalmeas.n_err[i] )
+        end
+        # omega: first without sqrt, then check if any comp is <0, then sqrt
+	    totalmeas.omega[i]      .= totalmeas.phi2k[i] ./ totalmeas.phi2k[i] 
+        if sum(totalmeas.omega[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.omega[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.omega[i]  .= sqrt.( totalmeas.omega[i] )
+        end
+	    totalmeas.omega_err[i]  .= 0.25 *  (totalmeas.omega[i] ./ totalmeas.phi2k[i]) .* totalmeas.phi2k_err[i].^2 + 0.25 * ( totalmeas.omega[i] ./ totalmeas.pi2k[i])  .* totalmeas.pi2k_err[i].^2 
+        if sum(totalmeas.omega_err[i] .< 0) > 0 # if any of the components is smaller than 0
+            println("Error is complex?!")
+            totalmeas.omega_err[i]  .*= 0 # otherwise plotting does not work
+        else
+	        totalmeas.omega_err[i]  .= sqrt.( totalmeas.omega_err[i] )
+        end
+    end
+
     totalmeas.Phi2k_err = sqrt.( totalmeas.Phi4k .- totalmeas.Phi2k.^2 ) ./ (num.Runs*disc.deg)
-    #totalmeas.n_err = 
-    #totalmeas.omega_err = 
 
     return totalmeas
 end
@@ -130,14 +198,52 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
     #
     # scalar propagator measurements
     #
+    # Measure Pi components (using Phi storage in tmpdata)
     for idx in 1:vol
+        # Pi
+        Phi_xcomp[1][idx] = simdata.Pi[idx][1]
+        Phi_xcomp[2][idx] = simdata.Pi[idx][2]
+        Phi_xcomp[3][idx] = simdata.Pi[idx][3]
+        Phi_xcomp[4][idx] = simdata.Pi[idx][4]
+    end
+    Phi_kcomp .= tuple(ftplan) .* Phi_xcomp
+    for i in 1:length(disc.fftwhelper)
+        for j in 1:disc.fftwhelper[i].deg
+            idx = disc.fftwhelper[i].ind[j]
+            for c in 1:4
+                meas.pi2k[c][i] += real(Phi_kcomp[c][idx])^2 + imag(Phi_kcomp[c][idx])^2
+                meas.pi4k[c][i] += real(Phi_kcomp[c][idx])^4 + imag(Phi_kcomp[c][idx])^4 + 2*real(Phi_kcomp[c][idx])^2 * imag(Phi_kcomp[c][idx])^2
+            end
+        end
+        for c in 1:4
+            meas.pi2k[c][i]  /= disc.fftwhelper[c].deg
+            meas.pi4k[c][i]  /= disc.fftwhelper[c].deg
+        end
+    end
+    # Measure Phi components
+    for idx in 1:vol
+        # Phi
         Phi_xcomp[1][idx] = simdata.Phi[idx][1]
         Phi_xcomp[2][idx] = simdata.Phi[idx][2]
         Phi_xcomp[3][idx] = simdata.Phi[idx][3]
         Phi_xcomp[4][idx] = simdata.Phi[idx][4]
     end
     Phi_kcomp .= tuple(ftplan) .* Phi_xcomp
+    for i in 1:length(disc.fftwhelper)
+        for j in 1:disc.fftwhelper[i].deg
+            idx = disc.fftwhelper[i].ind[j]
+            for c in 1:4
+                meas.phi2k[c][i] += real(Phi_kcomp[c][idx])^2 + imag(Phi_kcomp[c][idx])^2
+                meas.phi4k[c][i] += real(Phi_kcomp[c][idx])^4 + imag(Phi_kcomp[c][idx])^4 + 2*real(Phi_kcomp[c][idx])^2 * imag(Phi_kcomp[c][idx])^2
+            end
+        end
+        for c in 1:4
+            meas.phi2k[c][i]  /= disc.fftwhelper[c].deg
+            meas.phi4k[c][i]  /= disc.fftwhelper[c].deg
+        end
+    end
 
+    # Measure Phi 
     for idx in 1:vol
         Phi_k[idx] = SMatrix{2,2}( Phi_kcomp[1][idx], Phi_kcomp[2][idx], Phi_kcomp[3][idx], Phi_kcomp[4][idx] )
         Phi2ktmp[idx] = real(tr( adjoint(Phi_k[idx]) * Phi_k[idx] )/2)
