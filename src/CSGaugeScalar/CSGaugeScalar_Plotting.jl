@@ -314,7 +314,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
             if i==1
                 plot!(plotvector[c], tvals, [element.phi2k[c][2] for element in measurearray], label="k=" * string(round(disc.fftwhelper[2].lev, digits=1)) )
             else
-                plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+                plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[i].lev, digits=1)) )
             end
         end
     end
