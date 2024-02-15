@@ -216,9 +216,14 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
             end
         end
         for c in 1:4
-            meas.pi2k[c][i]  /= disc.fftwhelper[c].deg
-            meas.pi4k[c][i]  /= disc.fftwhelper[c].deg
+            meas.pi2k[c][i]  /= disc.fftwhelper[i].deg
+            meas.pi4k[c][i]  /= disc.fftwhelper[i].deg
         end
+    end
+    # Normalize
+    for c in 1:4
+        meas.pi2k[c] /= (disc.Nx^disc.sdim) # norm = 1/sqrt(N^3) & each field gets one
+        meas.pi4k[c] /= (disc.Nx^disc.sdim)^2 # norm = 1/sqrt(N^3) & each field gets one
     end
     # Measure Phi components
     for idx in 1:vol
@@ -238,11 +243,14 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
             end
         end
         for c in 1:4
-            meas.phi2k[c][i]  /= disc.fftwhelper[c].deg
-            meas.phi4k[c][i]  /= disc.fftwhelper[c].deg
+            meas.phi2k[c][i]  /= disc.fftwhelper[i].deg
+            meas.phi4k[c][i]  /= disc.fftwhelper[i].deg
         end
     end
-
+    for c in 1:4
+        meas.phi2k[c] /= (disc.Nx^disc.sdim) # norm = 1/sqrt(N^3) & each field gets one
+        meas.phi4k[c] /= (disc.Nx^disc.sdim)^2 # norm = 1/sqrt(N^3) & each field gets one
+    end
     # Measure Phi 
     for idx in 1:vol
         Phi_k[idx] = SMatrix{2,2}( Phi_kcomp[1][idx], Phi_kcomp[2][idx], Phi_kcomp[3][idx], Phi_kcomp[4][idx] )

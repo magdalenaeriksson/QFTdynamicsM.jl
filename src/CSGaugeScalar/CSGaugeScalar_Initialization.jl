@@ -371,53 +371,46 @@ function initialize!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vec
         #
         # like above set simdata[i].phix[1-4] & .piix[1-4] and the let initSimDataParallel! do the rest
         #
-
-        # get random number generator
-
-        # Mersenne Twister
-        ##if num.seed == 0 
-        ##    rng = MersenneTwister( )
-        ##else
-        ##    rng = MersenneTwister( num.seed )
-        ##end
-        ##println("using seed: ", num.seed)
-        # built in rng 
-        Random.seed!(123) # Setting the seed
-        d = Normal(0, 1)
-
-        # Maybe let more threads work on it
-        #@Threads.threads for ichunk in 1:num.threads
-        #    for i in num.threadranges[ichunk]
+        # get random number generator -  Mersenne Twister
+        if num.seed == 0 
+            rng = MersenneTwister( )
+        else
+            rng = MersenneTwister( num.seed )
+        end
+        println("using seed: ", num.seed)
 
         # get particle nr per mode
         n = getparticlenr(init, disc)
+
+        # get temporary storage
+        # x space -> real lattices
+        phix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+        piix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+        # k space -> complex lattices
+        phik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
+        piik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
+        flatt = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
+        f = zeros(4)
+        c = zeros(4)
+        A = zeros(4,4)
+
         # initialize 
         for i in 1:num.Runs
-            # get temporary storage
-            # x space -> real lattices
-            phix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
-            piix = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
-            # k space -> complex lattices
-            phik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
-            piik = 0*[createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim),createclattice(disc.Nx, disc.sdim)]
-            flatt = 0*[createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim),createlattice(disc.Nx, disc.sdim)]
-            f = zeros(4)
-            c = zeros(4)
-            A = zeros(4,4)
-
             #"Float64" in rand() -->> dist = Normal(0, 1) 
             for a in 1:4
-                phix[a] = rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(phik[a]))
-                piix[a] = rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(piik[a]))
-                phik[a] = fft(phix[a]) / sqrt(disc.vol)
-                piik[a] = fft(piix[a]) / sqrt(disc.vol)
+                #phix[a] .= rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(phik[a]))
+                #piix[a] .= rand( d, (disc.Nx,disc.Nx,disc.Nx))#rand(rng, Float64, size(piik[a]))
+                phix[a] .= randn(rng, Float64, (disc.Nx,disc.Nx,disc.Nx))
+                piix[a] .= randn(rng, Float64, (disc.Nx,disc.Nx,disc.Nx))
+                phik[a] .= fft(phix[a]) / sqrt(disc.vol)
+                piik[a] .= fft(piix[a]) / sqrt(disc.vol)
                 ## add factors of omega(k) to phik/piik 
                 for i in 1:length(disc.fftwhelper)
                     omega = sqrt(disc.fftwhelper[i].lev2 + model.Mass^2)
                     for j in 1:disc.fftwhelper[i].deg
                         idx = disc.fftwhelper[i].ind[j]
-                        phik[a][idx] *= sqrt( (n[i] + 0.5)   /omega)
-                        piik[a][idx] *= sqrt( (n[i] + 0.5) *omega )
+                        phik[a][idx] *= sqrt( (n[i] + 0.5) / omega )
+                        piik[a][idx] *= sqrt( (n[i] + 0.5) * omega )
                     end
                 end
             end
@@ -467,15 +460,15 @@ function initialize!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vec
             # set values in simdata
             #  
             # phi
-            simdata[i].phix[1] = real.(ifft(phik[1])) * sqrt(disc.vol) #df.phi1x[idx]
-            simdata[i].phix[2] = real.(ifft(phik[2])) * sqrt(disc.vol) #df.phi2x[idx]
-            simdata[i].phix[3] = real.(ifft(phik[3])) * sqrt(disc.vol) #df.phi3x[idx]
-            simdata[i].phix[4] = real.(ifft(phik[4])) * sqrt(disc.vol) #df.phi4x[idx]
+            simdata[i].phix[1] .= real.(ifft(phik[1])) * sqrt(disc.vol) #df.phi1x[idx]
+            simdata[i].phix[2] .= real.(ifft(phik[2])) * sqrt(disc.vol) #df.phi2x[idx]
+            simdata[i].phix[3] .= real.(ifft(phik[3])) * sqrt(disc.vol) #df.phi3x[idx]
+            simdata[i].phix[4] .= real.(ifft(phik[4])) * sqrt(disc.vol) #df.phi4x[idx]
             # pi
-            simdata[i].piix[1] = real.(ifft(piik[1])) * sqrt(disc.vol) #df.pii1x[idx]
-            simdata[i].piix[2] = real.(ifft(piik[2])) * sqrt(disc.vol) #df.pii2x[idx]
-            simdata[i].piix[3] = real.(ifft(piik[3])) * sqrt(disc.vol) #df.pii3x[idx]
-            simdata[i].piix[4] = real.(ifft(piik[4])) * sqrt(disc.vol) #df.pii4x[idx]
+            simdata[i].piix[1] .= real.(ifft(piik[1])) * sqrt(disc.vol) #df.pii1x[idx]
+            simdata[i].piix[2] .= real.(ifft(piik[2])) * sqrt(disc.vol) #df.pii2x[idx]
+            simdata[i].piix[3] .= real.(ifft(piik[3])) * sqrt(disc.vol) #df.pii3x[idx]
+            simdata[i].piix[4] .= real.(ifft(piik[4])) * sqrt(disc.vol) #df.pii4x[idx]
         end
     
         initSimDataParallel!(model, simdata, tmpdata, disc, num) # does: initU!, initMCPhiandPi!, initE!
