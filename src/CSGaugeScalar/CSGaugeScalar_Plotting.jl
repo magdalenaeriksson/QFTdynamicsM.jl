@@ -249,7 +249,6 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for i in 0:(length(kLidx)-1)
         kLidx[i+1] = Int64(findmin(abs.([element.lev for element in disc.fftwhelper] .- ( (i/(nkLmomenta-1))*kLmax ) ))[2])
     end
-    kLidx[1] = 2 # show the smallest IR mode, not the 0 mode
 
     # levels
     kvals = [el.lev for el in disc.fftwhelper]
@@ -262,15 +261,39 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     l = @layout [a b ; c d]
     #theplot = plot(phiplot, phi2plot, piiplot, pii2plot, layout=l)
 
-
     ####################################################################################################
+    ## TEST PLOTS
+    ####################################################################################################
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        #plot!(plotvector[c], kvals, measurearray[1].phi2k[c], yerr=measurearray[1].phi2k_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
+        plot!(plotvector[c], kvals, kvals * c, label="test " * string(c) )
+    end
+    plots["testplot.png"] = plot(plotvector..., layout=l)
+    ####################################################################################################
+    ## INITIAL TIME PLOTS
+    ####################################################################################################
+    # plot F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        plot!(plotvector[c], kvals, measurearray[1].phi2k[c], yerr=measurearray[1].phi2k_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
+    end
+    plots["phi2comp_initial.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"n_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        plot!(plotvector[c], kvals, measurearray[1].n[c], yerr=measurearray[1].n_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
+    end
+    plots["particlenumber_initial.png"] = plot(plotvector..., layout=l)
+   ####################################################################################################
     # TIME EVOLUTION PLOTS
     ####################################################################################################
     # plot F_0(t,t)
     plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"F_k(t,t)",) for i in 1:4]
     for c in 1:4 # iterte through components
         for (i, kidx) in enumerate(kLidx)
-            plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], yerr=[element.phi2k_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            #plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], yerr=[element.phi2k_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
         end
     end
     plots["phi2comp_t.png"] = plot(plotvector..., layout=l)
@@ -278,10 +301,37 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"n_k",) for i in 1:4]
     for c in 1:4 # iterte through components
         for (i, kidx) in enumerate(kLidx)
-            plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            #plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
         end
     end
     plots["particlenumber_t.png"] = plot(plotvector..., layout=l)
+    # plot F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, kidx) in enumerate(kLidx)
+            #plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], yerr=[element.phi2k_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            if i==1
+                plot!(plotvector[c], tvals, [element.phi2k[c][2] for element in measurearray], label="k=" * string(round(disc.fftwhelper[2].lev, digits=1)) )
+            else
+                plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[i].lev, digits=1)) )
+            end
+        end
+    end
+    plots["phi2comp_nozero_t.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"tm",ylabel = L"n_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, kidx) in enumerate(kLidx)
+            #plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            if i==1
+                plot!(plotvector[c], tvals, [element.n[c][2] for element in measurearray], label="k=" * string(round(disc.fftwhelper[2].lev, digits=1)) )
+            else
+                plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[i].lev, digits=1)) )
+            end
+        end
+    end
+    plots["particlenumber_nozero_t.png"] = plot(plotvector..., layout=l)
     ####################################################################################################
     ## SNAPSHOT PLOTS
     ####################################################################################################
@@ -290,7 +340,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for c in 1:4 # iterte through components
         for (i, tidx) in enumerate(timeidx)
             #plot!(plotvector[c], kvals, measurearray[tidx].phi2k[c], yerr=measurearray[tidx].phi2k_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
-            plot!(plotvector[c], kvals[2:end], measurearray[tidx].phi2k[c][2:end], yerr=measurearray[tidx].phi2k_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals, measurearray[tidx].phi2k[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
         end
     end
     plots["phi2comp.png"] = plot(plotvector..., layout=l)
@@ -299,7 +349,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for c in 1:4 # iterte through components
         for (i, tidx) in enumerate(timeidx)
             #plot!(plotvector[c], kvals, measurearray[tidx].n[c], yerr=measurearray[tidx].n_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
-            plot!(plotvector[c], kvals[2:end], measurearray[tidx].n[c][2:end], yerr=measurearray[tidx].n_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals, measurearray[tidx].n[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
         end
     end
     plots["particlenumber.png"] = plot(plotvector..., layout=l)
@@ -308,7 +358,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for c in 1:4 # iterte through components
         for (i, tidx) in enumerate(timeidx)
             #plot!(plotvector[c], kvals, measurearray[tidx].omega[c], yerr=measurearray[tidx].omega_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
-            plot!(plotvector[c], kvals[2:end], measurearray[tidx].omega[c][2:end], yerr=measurearray[tidx].omega_err[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals, measurearray[tidx].omega[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
         end
     end
     plots["dispersionrelation.png"] = plot(plotvector..., layout=l)
@@ -320,9 +370,27 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
             idxlog = tmparray .> 0.001 # for 1/n + 1 values for which the log function works
             #plot!(plotvector[c], kvals, measurearray[tidx].n[c][idxlog], yerr=measurearray[tidx].n_err[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
             idxlog[1] = false # dont print the 0 mode 
-            plot!(plotvector[c], kvals[idxlog], measurearray[tidx].n[c][idxlog], yerr=measurearray[tidx].n_err[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            #plot!(plotvector[c], kvals[idxlog], measurearray[tidx].n[c][idxlog], yerr=measurearray[tidx].n_err[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[idxlog], measurearray[tidx].n[c][idxlog], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
         end
     end
     plots["BEdistribution.png"] = plot(plotvector..., layout=l)
-
+    # plot F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            #plot!(plotvector[c], kvals, measurearray[tidx].phi2k[c], yerr=measurearray[tidx].phi2k_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[2:end], measurearray[tidx].phi2k[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["phi2comp_nozero.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"n_k",) for i in 1:4]
+    for c in 1:4 # iterte through components
+        for (i, tidx) in enumerate(timeidx)
+            #plot!(plotvector[c], kvals, measurearray[tidx].n[c], yerr=measurearray[tidx].n_err[c], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+            plot!(plotvector[c], kvals[2:end], measurearray[tidx].n[c][2:end], label="tm=" * string(round(measurearray[tidx].time,digits=1)) )
+        end
+    end
+    plots["particlenumber_nozero.png"] = plot(plotvector..., layout=l)
 end
