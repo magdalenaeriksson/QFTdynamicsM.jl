@@ -35,17 +35,17 @@ function +(A::MeasurementCSGaugeScalar,B::MeasurementCSGaugeScalar)
 				                	A.EscalPot  +B.EscalPot ,
 				                	A.GaussTot  +B.GaussTot ,
                                     A.GaussRel  +B.GaussRel ,
-                                    A.Phi2k     +B.Phi2k    ,
-                                    A.Phi4k     +B.Phi4k    ,
-                                    A.DTk       +B.DTk      ,
-                                    A.DLk       +B.DLk      ,
-                                    A.E2T       +B.E2T      ,
-                                    A.E2L       +B.E2L      ,
+                                    A.Phi2k    .+B.Phi2k    ,
+                                    A.Phi4k    .+B.Phi4k    ,
+                                    A.DTk      .+B.DTk      ,
+                                    A.DLk      .+B.DLk      ,
+                                    A.E2T      .+B.E2T      ,
+                                    A.E2L      .+B.E2L      ,
                                     # Scalar components
-                                    A.phi2k    .+B.phi2k    ,
-                                    A.phi4k    .+B.phi4k    ,
-                                    A.pi2k     .+B.pi2k     ,
-                                    A.pi4k     .+B.pi4k     )
+                                    [ A.phi2k[1] .+ B.phi2k[1], A.phi2k[2] .+ B.phi2k[2] , A.phi2k[3] .+ B.phi2k[3] , A.phi2k[4] .+ B.phi2k[4] ],
+                                    [ A.pi2k[1]  .+ B.pi2k[1],  A.pi2k[2]  .+ B.pi2k[2]  , A.pi2k[3]  .+ B.pi2k[3]  , A.pi2k[4]  .+ B.pi2k[4]  ],
+                                    [ A.phi4k[1] .+ B.phi4k[1], A.phi4k[2] .+ B.phi4k[2] , A.phi4k[3] .+ B.phi4k[3] , A.phi4k[4] .+ B.phi4k[4] ],
+                                    [ A.pi4k[1]  .+ B.pi4k[1],  A.pi4k[2]  .+ B.pi4k[2]  , A.pi4k[3]  .+ B.pi4k[3]  , A.pi4k[4]  .+ B.pi4k[4]  ],)
 end
 
 # total (final) measurement array containing multiple averaged runs
@@ -198,15 +198,18 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
     #
     # scalar propagator measurements
     #
-    # Measure Pi components (using Phi storage in tmpdata)
+    # Measure Pi components (using Phi storage in tmpdata) - Actually not components but small pi!
     for idx in 1:vol
         # Pi
-        Phi_xcomp[1][idx] = simdata.Pi[idx][1]
-        Phi_xcomp[2][idx] = simdata.Pi[idx][2]
-        Phi_xcomp[3][idx] = simdata.Pi[idx][3]
-        Phi_xcomp[4][idx] = simdata.Pi[idx][4]
+        Phi_xcomp[1][idx] = -real(2 * simdata.Pi[idx][2]) # or real(2 * simdata.Pi[idx][3])
+        Phi_xcomp[2][idx] = imag(2 * simdata.Pi[idx][2]) # or imag(2 * simdata.Pi[idx][3])
+        Phi_xcomp[3][idx] = real(2 * simdata.Pi[idx][1]) # or real(2 * simdata.Pi[idx][4])
+        Phi_xcomp[4][idx] = -imag(2 * simdata.Pi[idx][1]) # or imag(2 * simdata.Pi[idx][4])
     end
-    Phi_kcomp .= tuple(ftplan) .* Phi_xcomp
+    Phi_kcomp[1] .= ftplan * Phi_xcomp[1]
+    Phi_kcomp[2] .= ftplan * Phi_xcomp[2]
+    Phi_kcomp[3] .= ftplan * Phi_xcomp[3]
+    Phi_kcomp[4] .= ftplan * Phi_xcomp[4]
     for i in 1:length(disc.fftwhelper)
         for j in 1:disc.fftwhelper[i].deg
             idx = disc.fftwhelper[i].ind[j]
@@ -225,15 +228,18 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
         meas.pi2k[c] /= (disc.Nx^disc.sdim) # norm = 1/sqrt(N^3) & each field gets one
         meas.pi4k[c] /= (disc.Nx^disc.sdim)^2 # norm = 1/sqrt(N^3) & each field gets one
     end
-    # Measure Phi components
+    # Measure Phi components (using Phi storage in tmpdata) - Actually not components but small phi!
     for idx in 1:vol
         # Phi
-        Phi_xcomp[1][idx] = simdata.Phi[idx][1]
-        Phi_xcomp[2][idx] = simdata.Phi[idx][2]
-        Phi_xcomp[3][idx] = simdata.Phi[idx][3]
-        Phi_xcomp[4][idx] = simdata.Phi[idx][4]
+        Phi_xcomp[1][idx] = -real(2 * simdata.Phi[idx][2]) # or real(2 * simdata.Phi[idx][3])
+        Phi_xcomp[2][idx] = imag(2 * simdata.Phi[idx][2]) # or imag(2 * simdata.Phi[idx][3])
+        Phi_xcomp[3][idx] = real(2 * simdata.Phi[idx][1]) # or real(2 * simdata.Phi[idx][4])
+        Phi_xcomp[4][idx] = -imag(2 * simdata.Phi[idx][1]) # or imag(2 * simdata.Phi[idx][4])
     end
-    Phi_kcomp .= tuple(ftplan) .* Phi_xcomp
+    Phi_kcomp[1] .= ftplan * Phi_xcomp[1]
+    Phi_kcomp[2] .= ftplan * Phi_xcomp[2]
+    Phi_kcomp[3] .= ftplan * Phi_xcomp[3]
+    Phi_kcomp[4] .= ftplan * Phi_xcomp[4]
     for i in 1:length(disc.fftwhelper)
         for j in 1:disc.fftwhelper[i].deg
             idx = disc.fftwhelper[i].ind[j]
@@ -251,7 +257,17 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
         meas.phi2k[c] /= (disc.Nx^disc.sdim) # norm = 1/sqrt(N^3) & each field gets one
         meas.phi4k[c] /= (disc.Nx^disc.sdim)^2 # norm = 1/sqrt(N^3) & each field gets one
     end
-    # Measure Phi 
+    # Measure Phi
+    for idx in 1:vol
+        Phi_xcomp[1][idx] = simdata.Phi[idx][1]
+        Phi_xcomp[2][idx] = simdata.Phi[idx][2]
+        Phi_xcomp[3][idx] = simdata.Phi[idx][3]
+        Phi_xcomp[4][idx] = simdata.Phi[idx][4]
+    end
+    Phi_kcomp[1] .= ftplan * Phi_xcomp[1]
+    Phi_kcomp[2] .= ftplan * Phi_xcomp[2]
+    Phi_kcomp[3] .= ftplan * Phi_xcomp[3]
+    Phi_kcomp[4] .= ftplan * Phi_xcomp[4]
     for idx in 1:vol
         Phi_k[idx] = SMatrix{2,2}( Phi_kcomp[1][idx], Phi_kcomp[2][idx], Phi_kcomp[3][idx], Phi_kcomp[4][idx] )
         Phi2ktmp[idx] = real(tr( adjoint(Phi_k[idx]) * Phi_k[idx] )/2)
