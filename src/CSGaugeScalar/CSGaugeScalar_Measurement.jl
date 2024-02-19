@@ -43,8 +43,8 @@ function +(A::MeasurementCSGaugeScalar,B::MeasurementCSGaugeScalar)
                                     A.E2L      .+B.E2L      ,
                                     # Scalar components
                                     [ A.phi2k[1] .+ B.phi2k[1], A.phi2k[2] .+ B.phi2k[2] , A.phi2k[3] .+ B.phi2k[3] , A.phi2k[4] .+ B.phi2k[4] ],
-                                    [ A.pi2k[1]  .+ B.pi2k[1],  A.pi2k[2]  .+ B.pi2k[2]  , A.pi2k[3]  .+ B.pi2k[3]  , A.pi2k[4]  .+ B.pi2k[4]  ],
                                     [ A.phi4k[1] .+ B.phi4k[1], A.phi4k[2] .+ B.phi4k[2] , A.phi4k[3] .+ B.phi4k[3] , A.phi4k[4] .+ B.phi4k[4] ],
+                                    [ A.pi2k[1]  .+ B.pi2k[1],  A.pi2k[2]  .+ B.pi2k[2]  , A.pi2k[3]  .+ B.pi2k[3]  , A.pi2k[4]  .+ B.pi2k[4]  ],
                                     [ A.pi4k[1]  .+ B.pi4k[1],  A.pi4k[2]  .+ B.pi4k[2]  , A.pi4k[3]  .+ B.pi4k[3]  , A.pi4k[4]  .+ B.pi4k[4]  ],)
 end
 
