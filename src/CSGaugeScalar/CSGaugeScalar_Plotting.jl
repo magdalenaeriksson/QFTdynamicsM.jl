@@ -261,28 +261,25 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     l = @layout [a b ; c d]
     #theplot = plot(phiplot, phi2plot, piiplot, pii2plot, layout=l)
 
-    ####################################################################################################
-    ## TEST PLOTS
-    ####################################################################################################
-    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
-    for c in 1:4 # iterte through components
-        #plot!(plotvector[c], kvals, measurearray[1].phi2k[c], yerr=measurearray[1].phi2k_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
-        plot!(plotvector[c], kvals, kvals * c, label="test " * string(c) )
-    end
-    plots["testplot.png"] = plot(plotvector..., layout=l)
-    ####################################################################################################
+   ####################################################################################################
     ## INITIAL TIME PLOTS
     ####################################################################################################
     # plot F_0(t,t)
-    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)",) for i in 1:4]
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"F_k(t,t)", ylim=(0,5)) for i in 1:4]
     for c in 1:4 # iterte through components
-        plot!(plotvector[c], kvals, measurearray[1].phi2k[c], yerr=measurearray[1].phi2k_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
+        plot!(plotvector[c], kvals, measurearray[1].phi2k[c], yerr=measurearray[1].phi2k_err[c], label="comp=" * string(c) )
     end
     plots["phi2comp_initial.png"] = plot(plotvector..., layout=l)
-    # plot n_k(t)
-    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"n_k",) for i in 1:4]
+    # plot \partial_t \partial_t F_0(t,t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"\partial_t \partial_t F_k(t,t)", ylim=(0,5)) for i in 1:4]
     for c in 1:4 # iterte through components
-        plot!(plotvector[c], kvals, measurearray[1].n[c], yerr=measurearray[1].n_err[c], label="tm=" * string(round(measurearray[1].time,digits=1)) )
+        plot!(plotvector[c], kvals, measurearray[1].pi2k[c], yerr=measurearray[1].pi2k_err[c], label="comp=" * string(c) )
+    end
+    plots["pi2comp_initial.png"] = plot(plotvector..., layout=l)
+    # plot n_k(t)
+    plotvector = [plot(size=(1200,800), xlabel = L"k_L",ylabel = L"n_k", ylim=(0,5)) for i in 1:4]
+    for c in 1:4 # iterte through components
+        plot!(plotvector[c], kvals, measurearray[1].n[c], yerr=measurearray[1].n_err[c], label="comp=" * string(c) )
     end
     plots["particlenumber_initial.png"] = plot(plotvector..., layout=l)
    ####################################################################################################
