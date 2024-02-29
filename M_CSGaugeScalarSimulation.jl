@@ -42,6 +42,7 @@ serialize( thesolution.problem.simsetup.datapath * "/SimSolution.jld", thesoluti
 plots = Dict()
 plotdata(plots, thesolution, "c")  #create canvas
 plotdata(plots, thesolution, "h", 1, "myplot") # fill canvas
+plotScalarcomponentdata(plots, thesolution, 1, "myplot")
 if isinteractive() == true
     displayplots(plots)
     saveplots(plots, thesolution.problem.simsetup.plotpath)
