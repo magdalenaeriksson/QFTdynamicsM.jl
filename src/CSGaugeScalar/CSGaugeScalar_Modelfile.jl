@@ -15,6 +15,7 @@ include("CSGaugeScalar_ModelExpansionRenormalization.jl")
 function getParameterstring(modelfile::CSGaugeScalarFile, parameters)
     # Model
     if parameters["Mod"]=="CS_SUNgaugeScalar" parameterstring = "SU" * string(Int64(parameters["N"])) * "gaugeScalar"  end
+    if parameters["Mod"]=="CS_SUNgaugeScalarTachyonic" parameterstring = "SU" * string(Int64(parameters["N"])) * "gaugeScalarTachyonic"  end
     if parameters["Mod"]=="CS_U1gaugeScalar" parameterstring = "U1gaugeScalar" end
     parameterstring *= parameters["Pexp"]
     parameterstring *= "_Lambda"   * string( Int64(parameters["Lambda"] *1000 )	) 
@@ -71,13 +72,20 @@ function QFTdynamicsProblem(modelfile::CSGaugeScalarFile, parameters)
     # Models
     if parameters["Mod"] == "CS_SUNgaugeScalar" 
         model = CS_SUNgaugeScalar( parameters["Lambda"], 
-                                parameters["Mass"], 
+                                parameters["Mass"]^2, 
                                 parameters["g"], 
                                 parameters["N"])
-                                #(parameters["N"]^2-1)/(2*parameters["N"])) #CF = (N^2-1)/(2N)
-    elseif parameters["Mod"] == "CS_U1gaugeScalar" 
-        model = CS_U1gaugeScalar( parameters["Lambda"], parameters["Mass"], parameters["g"] )
     end
+    if parameters["Mod"] == "CS_SUNgaugeScalarTachyonic" 
+        model = CS_SUNgaugeScalarTachyonic( parameters["Lambda"], 
+                                -parameters["Mass"]^2, 
+                                parameters["g"], 
+                                parameters["N"])
+    end
+                                #(parameters["N"]^2-1)/(2*parameters["N"])) #CF = (N^2-1)/(2N)
+    #elseif parameters["Mod"] == "CS_U1gaugeScalar" 
+    #    model = CS_U1gaugeScalar( parameters["Lambda"], parameters["Mass"], parameters["g"] )
+    #end
 
     # Initialization
     if parameters["init"] == "Thermal"  init = CSGaugeScalarThermal(parameters["T"])  end

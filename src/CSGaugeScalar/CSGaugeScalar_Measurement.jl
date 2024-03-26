@@ -11,6 +11,7 @@ Base.@kwdef mutable struct MeasurementCSGaugeScalar{N} <: Measurement
     EscalPot::Float64=0
     GaussTot::Float64=0
     GaussRel::Float64=0
+    MeanPhix2::Float64=0
     Phi2k::Vector{Float64}=zeros(Float64, N )
     Phi4k::Vector{Float64}=zeros(Float64, N )
     DTk::Vector{Float64}=zeros(Float64, N )
@@ -35,6 +36,7 @@ function +(A::MeasurementCSGaugeScalar,B::MeasurementCSGaugeScalar)
 				                	A.EscalPot  +B.EscalPot ,
 				                	A.GaussTot  +B.GaussTot ,
                                     A.GaussRel  +B.GaussRel ,
+                                    A.MeanPhix2 +B.MeanPhix2,
                                     A.Phi2k    .+B.Phi2k    ,
                                     A.Phi4k    .+B.Phi4k    ,
                                     A.DTk      .+B.DTk      ,
@@ -62,6 +64,7 @@ Base.@kwdef mutable struct TotalMeasurementCSGaugeScalar{N} <: Measurement
     GaussTot::Float64=0
     GaussRel::Float64=0
     # 
+    MeanPhix2::Float64=0
     Phi2k::Vector{Float64}=zeros(Float64, N )
     Phi4k::Vector{Float64}=zeros(Float64, N )
     DTk::Vector{Float64}=zeros(Float64, N ) 
@@ -101,6 +104,7 @@ function combinedMeasurements(model::CSGaugeScalarModel, MeasArrOfRuns::Vector{M
     totalmeas.EscalPot  = meassum.EscalPot  / num.Runs
     totalmeas.GaussTot  = meassum.GaussTot  / num.Runs
     totalmeas.GaussRel  = meassum.GaussRel  / num.Runs
+    totalmeas.MeanPhix2 = meassum.MeanPhix2 / num.Runs
     totalmeas.Phi2k    .= meassum.Phi2k     / num.Runs
     totalmeas.Phi4k    .= meassum.Phi4k     / num.Runs
     totalmeas.DTk      .= meassum.DTk       / num.Runs
@@ -194,7 +198,12 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
         meas.GaussTot = getGauss(model, simdata, tmpdata, disc)[1]
         meas.GaussRel = getGauss(model, simdata, tmpdata, disc)[2]
     end
-
+    # 1/vol sum_x Phi(x)^dagger Phi(x)
+    for idx in 1:vol
+        meas.MeanPhix2 += real( tr(adjoint(simdata.Phi[idx])*simdata.Phi[idx]) )
+    end
+    meas.MeanPhix2 /= vol
+   
     #
     # scalar propagator measurements
     #
@@ -202,8 +211,8 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
     for idx in 1:vol
         # Pi
         Phi_xcomp[1][idx] = -real(2 * simdata.Pi[idx][2]) # or real(2 * simdata.Pi[idx][3])
-        Phi_xcomp[2][idx] = imag(2 * simdata.Pi[idx][2]) # or imag(2 * simdata.Pi[idx][3])
-        Phi_xcomp[3][idx] = real(2 * simdata.Pi[idx][1]) # or real(2 * simdata.Pi[idx][4])
+        Phi_xcomp[2][idx] =  imag(2 * simdata.Pi[idx][2]) # or imag(2 * simdata.Pi[idx][3])
+        Phi_xcomp[3][idx] =  real(2 * simdata.Pi[idx][1]) # or real(2 * simdata.Pi[idx][4])
         Phi_xcomp[4][idx] = -imag(2 * simdata.Pi[idx][1]) # or imag(2 * simdata.Pi[idx][4])
     end
     Phi_kcomp[1] .= ftplan * Phi_xcomp[1]
@@ -370,7 +379,7 @@ end
 ####################################################################################################
 ## Calculate energy components
 ##
-function getEelec(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function getEelec(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Ea, vol = simdata
     for idx in 1:vol
         tmpdata.EelecLatt[idx] = sum(Ea[idx][1] .^2) + sum(Ea[idx][2] .^2) + sum(Ea[idx][3] .^2)
@@ -379,7 +388,7 @@ function getEelec(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::S
     return real( 0.5*sum(tmpdata.EelecLatt)/vol )
 end
 #
-function getEmagn(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function getEmagn(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack U, Nx, vol = simdata
     for x in 1:Nx
         for y in 1:Nx
@@ -412,13 +421,13 @@ end
 #    #Escal = real( sum(EscalLatt)/vol )
 #    return real( sum(EscalLattTot)/vol )
 #end
-function getEscalPot(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function getEscalPot(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     for idx in 1:simdata.vol
-        tmpdata.EscalLattPot[idx] = ( model.Mass^2 + model.Lambda*tr(adjoint(simdata.Phi[idx]) * simdata.Phi[idx]) ) * tr(adjoint(simdata.Phi[idx]) * simdata.Phi[idx])
+        tmpdata.EscalLattPot[idx] = ( model.Mass2 + model.Lambda*tr(adjoint(simdata.Phi[idx]) * simdata.Phi[idx]) ) * tr(adjoint(simdata.Phi[idx]) * simdata.Phi[idx])
     end
     return real( sum(tmpdata.EscalLattPot)/simdata.vol )
 end
-function getEscalKin(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function getEscalKin(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Pi, Phi, U, Nx, vol = simdata
     for x in 1:Nx
         for y in 1:Nx
@@ -436,7 +445,7 @@ end
 #################################################################################################### 
 ## Calculate Gauss constraint
 ##
-function getGauss(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function getGauss(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Pi, Phi, U, Ea, Ectd, E0, pauli, Nx, vol = simdata
     @unpack Ga, GaEcont, GaRelNumerator, GaRel, Ga2Latt, GaRelLatt, rhok, chik, rhox, chix = tmpdata
     

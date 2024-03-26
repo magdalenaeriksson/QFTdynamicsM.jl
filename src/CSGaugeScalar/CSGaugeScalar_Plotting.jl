@@ -78,7 +78,11 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
         plot!(plots["EnergyGauge.png"],[element.time for element in measurearray], [element.Emagn for element in measurearray], ls=line, lc=color[2], markerstrokecolor=:auto, label="magn")
      end
     # Scalar field
-    if mode == "c" plots["Phi2_t.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{p}=0)|^2>/V")
+    if mode == "c" plots["MeanPhi2_t.png"] = plot(xlabel = L"tm",ylabel =L"1/V \sum_x |\Phi(t;x)|^2")
+    else
+        plot!(plots["MeanPhi2_t.png"],[element.time for element in measurearray], [element.MeanPhix2 for element in measurearray],)
+    end
+    if mode == "c" plots["Phi2_t.png"] = plot(xlabel = L"tm",ylabel =L"<|\Phi(t;\mathbf{k})|^2>/V")
     else
         for (i, kidx) in enumerate(kLidx)
         plot!(plots["Phi2_t.png"],[element.time for element in measurearray], [element.Phi2k[kidx] for element in measurearray], ls=line, lc=color[i], label=label * ": k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)))
@@ -290,7 +294,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for c in 1:4 # iterte through components
         for (i, kidx) in enumerate(kLidx)
             #plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], yerr=[element.phi2k_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
-            plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            plot!(plotvector[c], tvals, [element.phi2k[c][kidx] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
         end
     end
     plots["phi2comp_t.png"] = plot(plotvector..., layout=l)
@@ -299,7 +303,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
     for c in 1:4 # iterte through components
         for (i, kidx) in enumerate(kLidx)
             #plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], yerr=[element.n_err[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
-            plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
+            plot!(plotvector[c], tvals, [element.n[c][kidx] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
         end
     end
     plots["particlenumber_t.png"] = plot(plotvector..., layout=l)
@@ -311,7 +315,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
             if i==1
                 plot!(plotvector[c], tvals, [element.phi2k[c][2] for element in measurearray], label="k=" * string(round(disc.fftwhelper[2].lev, digits=1)) )
             else
-                plot!(plotvector[c], tvals, [element.phi2k[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[i].lev, digits=1)) )
+                plot!(plotvector[c], tvals, [element.phi2k[c][kidx] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
             end
         end
     end
@@ -324,7 +328,7 @@ function plotScalarcomponentdata(plots::Dict, thesolution::QFTdynamicsSolutionCS
             if i==1
                 plot!(plotvector[c], tvals, [element.n[c][2] for element in measurearray], label="k=" * string(round(disc.fftwhelper[2].lev, digits=1)) )
             else
-                plot!(plotvector[c], tvals, [element.n[c][i] for element in measurearray], label="k=" * string(round(disc.fftwhelper[i].lev, digits=1)) )
+                plot!(plotvector[c], tvals, [element.n[c][kidx] for element in measurearray], label="k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)) )
             end
         end
     end
