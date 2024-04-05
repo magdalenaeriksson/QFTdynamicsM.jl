@@ -229,6 +229,7 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
         meas.pi4k[c] /= (disc.Nx^disc.sdim)^2 # norm = 1/sqrt(N^3) & each field gets one
     end
     # Measure Phi components (using Phi storage in tmpdata) - Actually not components but small phi!
+    # these are the phix[1], .., phix[4] that we see in the initialisation function
     for idx in 1:vol
         # Phi
         Phi_xcomp[1][idx] = -real(2 * simdata.Phi[idx][2]) # or real(2 * simdata.Phi[idx][3])
