@@ -4,7 +4,7 @@ using LinearAlgebra
 using Random, Distributions
 using DataFrames
 
-function initPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization, rng::Random.MersenneTwister)
+function initPhiandPi!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization, rng::Random.MersenneTwister)
     @unpack flatt, f, c, A, phik, piik, rhok, chik, phix, piix, rhox, chix, ftplan, iftplan, Nx, sdim = tmpdata
     Random.seed!(123) # Setting the seed
     d = Normal(0, 1)
@@ -17,7 +17,7 @@ function initPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpda
         piik[a] = fft(piix[a]) / sqrt(disc.vol)
         ## add factors of omega(k) to phik/piik 
         for i in 1:length(disc.fftwhelper)
-            omega = sqrt(disc.fftwhelper[i].lev2 + model.Mass^2)
+            omega = sqrt(disc.fftwhelper[i].lev2 + model.Mass2)
             for j in 1:disc.fftwhelper[i].deg
                 idx = disc.fftwhelper[i].ind[j]
                 phik[a][idx] *= 1/sqrt(2*omega)
@@ -121,7 +121,7 @@ function initPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpda
     return
 end
 
-function initMCPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function initMCPhiandPi!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack phix, piix, Pi, Phi, pauli = simdata
     @unpack rhox = tmpdata
     #@show phix[1][2]
@@ -162,7 +162,7 @@ function initMCPhiandPi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmp
     #@show sum(rhox[4])
 end
 
-function initE!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function initE!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Ga, GaEcont, GaRelNumerator, GaRel, Ga2Latt, GaRelLatt, rhok, chik, rhox, chix, k2values = tmpdata
     @unpack U, Ea, Ectd, pauli, vol, Nx = simdata
     ##
@@ -213,14 +213,14 @@ function initE!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2
     return
 end
 
-function initU!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function initU!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     for idx in 1:disc.vol
         simdata.U[idx] = SVector( SMatrix{2,2}(1,0,0,1), SMatrix{2,2}(1,0,0,1), SMatrix{2,2}(1,0,0,1) )
     end
     return
 end
 
-function checklocalGauss(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function checklocalGauss(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Pi, Phi, U, Ea, Ectd, E0, Ga, pauli, Ta, Nx, vol = simdata
     @unpack rhok, chik, rhox, chix = tmpdata
     #
@@ -311,7 +311,7 @@ function getparticlenr(init::CSGaugeScalarTopHatT3, disc::CSGaugeScalarDiscretiz
     return n
 end
 
-function initSimDataSerial!(model::CS_SUNgaugeScalar, simdata::Vector{SU2HiggsSimData}, tmpdata::Vector{SU2HiggsTmpData}, disc::CSGaugeScalarDiscretization, num::CSNumericsGaugeScalarCPU)
+function initSimDataSerial!(model::CSSUNgaugeScalar, simdata::Vector{SU2HiggsSimData}, tmpdata::Vector{SU2HiggsTmpData}, disc::CSGaugeScalarDiscretization, num::CSNumericsGaugeScalarCPU)
     println("Serial initialisation"); flush(stdout)
 
     # tmpdata's are all the same
@@ -322,7 +322,7 @@ function initSimDataSerial!(model::CS_SUNgaugeScalar, simdata::Vector{SU2HiggsSi
     end
 end
 
-function initSimDataParallel!(model::CS_SUNgaugeScalar, simdata::Vector{SU2HiggsSimData}, tmpdata::Vector{SU2HiggsTmpData}, disc::CSGaugeScalarDiscretization, num::CSNumericsGaugeScalarCPU)
+function initSimDataParallel!(model::CSSUNgaugeScalar, simdata::Vector{SU2HiggsSimData}, tmpdata::Vector{SU2HiggsTmpData}, disc::CSGaugeScalarDiscretization, num::CSNumericsGaugeScalarCPU)
     println("Parallel initialisation"); flush(stdout)
 
     # with parallel processes, we want induividual tmpdata's
@@ -406,13 +406,21 @@ function initialize!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vec
                 piik[a] .= fft(piix[a]) / sqrt(disc.vol)
                 ## add factors of omega(k) to phik/piik 
                 for i in 1:length(disc.fftwhelper)
-                    omega = sqrt(disc.fftwhelper[i].lev2 + model.Mass^2)
+                    omega = sqrt(disc.fftwhelper[i].lev2 + disc.Mass^2)
                     for j in 1:disc.fftwhelper[i].deg
                         idx = disc.fftwhelper[i].ind[j]
                         phik[a][idx] *= sqrt( (n[i] + 0.5) / omega )
                         piik[a][idx] *= sqrt( (n[i] + 0.5) * omega )
                     end
                 end
+            end
+
+            # if tachyonic model: add vev to first component of Phi -> its 0 mode
+            if typeof(model) == QFTdynamics.CS_SUNgaugeScalarTachyonic
+                # add vev to a component of Phi
+                vev = disc.Mass / sqrt( 2 * model.Lambda)
+                phik[1][1] += vev * sqrt(disc.vol)
+                # equivalent to simdata[i].phix[1] .+= vev - but then we dont fullfill gauss constraint
             end
 
             # construct Gauss matrix equation elements: f
@@ -469,6 +477,14 @@ function initialize!(thesolution::QFTdynamicsSolutionCSGaugeScalar, tmpdata::Vec
             simdata[i].piix[2] .= real.(ifft(piik[2])) * sqrt(disc.vol) #df.pii2x[idx]
             simdata[i].piix[3] .= real.(ifft(piik[3])) * sqrt(disc.vol) #df.pii3x[idx]
             simdata[i].piix[4] .= real.(ifft(piik[4])) * sqrt(disc.vol) #df.pii4x[idx]
+
+#            # if tachyonic model: add vev to first component of Phi. Moved to before fullfilling Gauge constraint 
+#            if typeof(model) == QFTdynamics.CS_SUNgaugeScalarTachyonic
+#                # add vev to a component of Phi
+#                vev = disc.Mass / sqrt( 2 * model.Lambda)
+#                simdata[i].phix[1] .+= vev 
+#            end
+
         end
     
         initSimDataParallel!(model, simdata, tmpdata, disc, num) # does: initU!, initMCPhiandPi!, initE!

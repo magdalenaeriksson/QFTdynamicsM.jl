@@ -109,7 +109,7 @@ end
 ##
 ## Field update/evolution functions
 ##
-function updateEpuregauge!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function updateEpuregauge!(model::CSSUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     @unpack Pi, Phi, U, Ea, Ectd, E0, Ta, Nx = simdata
     Ea_old = deepcopy(simdata.Ea)
     C1 = dt/model.g
@@ -125,7 +125,7 @@ function updateEpuregauge!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tm
     return
 end
 
-function updateEa!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function updateEa!(model::CSSUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     @unpack Pi, Phi, U, Ea, Ectd, E0, pauli, Nx = simdata
     Ea_old = deepcopy(simdata.Ea)
     #C1 = dt/model.g # NOTE: -im*tr(..) == +imag( tr(..) ) (Finns notation), see below 
@@ -148,7 +148,7 @@ function updateEa!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::S
     
     return
 end
-function updateEi!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function updateEi!(model::CSSUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     @unpack Ea, Ectd, Eaσa, E2i, E0i, E2, E0, pauli, vol, Nx = simdata
     #E2lat = 0*tmpdata.flatt[1] # sum_{i,a} E(x)ia^2
     #E0lat = 0*tmpdata.flatt[1]
@@ -180,7 +180,7 @@ function updateEi!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::S
     #@show Ea[54][2]
 end
 
-function updateU!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function updateU!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     U_old = deepcopy(simdata.U)
     for idx in 1:simdata.vol
         #simdata.U[idx] = SVector(model.g*dt * simdata.Ectd[idx][1] * U_old[idx][1], 
@@ -202,14 +202,14 @@ function updatePhi!(simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Floa
     return
 end
 
-function updatePi!(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function updatePi!(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     # NOTE: double check constants in scalar potential
     @unpack Pi, Phi, U, Nx = simdata
     oldPi = deepcopy(simdata.Pi)
     for x in 1:Nx
         for y in 1:Nx
             for z in 1:Nx
-                Pi[x,y,z] = oldPi[x,y,z] + dt*( - ( 6 + model.Mass^2 + 2*model.Lambda*tr(adjoint(Phi[x,y,z])*Phi[x,y,z]) ) * Phi[x,y,z]
+                Pi[x,y,z] = oldPi[x,y,z] + dt*( - ( 6 + model.Mass2 + 2*model.Lambda*tr(adjoint(Phi[x,y,z])*Phi[x,y,z]) ) * Phi[x,y,z]
                                                 + U[x,y,z][1] * Phi[mod1(x+1,Nx),y,z] + adjoint(U[mod1(x-1,Nx),y,z][1]) * Phi[mod1(x-1,Nx),y,z] 
                                                 + U[x,y,z][2] * Phi[x,mod1(y+1,Nx),z] + adjoint(U[x,mod1(y-1,Nx),z][2]) * Phi[x,mod1(y-1,Nx),z]
                                                 + U[x,y,z][3] * Phi[x,y,mod1(z+1,Nx)] + adjoint(U[x,y,mod1(z-1,Nx)][3]) * Phi[x,y,mod1(z-1,Nx)] )
@@ -225,7 +225,7 @@ end
 
 #
 ## Compute Gauss constraint
-function calcGausspuregauge!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
+function calcGausspuregauge!(model::CSSUNgaugeScalar,simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, dt::Float64)
     @unpack Pi, Phi, U, Ea, Ectd, E0, Ta, Nx = simdata
     for idx in 1:simdata.vol
         Ectd[idx] = SVector( sum( simdata.Ea[idx][1] .* simdata.Ta ), sum(simdata.Ea[idx][2] .* simdata.Ta), sum(simdata.Ea[idx][3] .* simdata.Ta) )
@@ -243,7 +243,7 @@ function calcGausspuregauge!(model::CS_SUNgaugeScalar,simdata::SU2HiggsSimData, 
     @show G[1]
     @show G[132]
 end
-function calcGaussEa(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function calcGaussEa(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Pi, Phi, U, Ea, Ectd, E0, pauli, Ta, Nx, vol = simdata
     @unpack Ga, rhok, chik, rhox, chix = tmpdata
     #
@@ -301,7 +301,7 @@ function calcGaussEa(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata
     
 end
 
-function calcGaussEi(model::CS_SUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
+function calcGaussEi(model::CSSUNgaugeScalar, simdata::SU2HiggsSimData, tmpdata::SU2HiggsTmpData, disc::CSGaugeScalarDiscretization)
     @unpack Pi, Phi, U, Ea, Ectd, E0, pauli, Ta, Nx, vol = simdata
     @unpack Ga, rhok, chik, rhox, chix = tmpdata
     #
