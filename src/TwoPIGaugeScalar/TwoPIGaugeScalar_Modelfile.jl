@@ -15,26 +15,26 @@ include("TwoPIGaugeScalar_ModelExpansionRenormalization.jl")
 #
 function getParameterstring(modelfile::TwoPIGaugeScalarfile, parameters)
     # Model
-    if parameters["Mod"]=="SUNgaugeScalar" parameterstring = "SU(" * string(Int64(parameters["N"])) * ")gaugeScalar"  end
-    if parameters["Mod"]=="U1gaugeScalar" parameterstring = "U(1)gaugeScalar" end
+    if parameters["Mod"]=="SUNgaugeScalar" parameterstring = "SU" * string(Int64(parameters["N"])) * "gaugeScalar"  end
+    if parameters["Mod"]=="U1gaugeScalar" parameterstring = "U1gaugeScalar" end
     parameterstring *= parameters["Pexp"]
-    parameterstring *= "|Lambda="   * string( parameters["Lambda"] ) 
-    parameterstring *= "|g="        * string( Int64(parameters["g"]*1000))
-    parameterstring *= "|"          * parameters["Reno"]
+    parameterstring *= "_Lambda"   * string( parameters["Lambda"]*100 ) 
+    parameterstring *= "_g"        * string( Int64(parameters["g"]*1000))
+    parameterstring *= "_"          * parameters["Reno"]
     if parameters["init"]=="Thermo" 
-        parameterstring *= "|T=" * string(Int64(parameters["T"])) 
+        parameterstring *= "_T" * string(Int64(parameters["T"])) 
     elseif parameters["init"]=="Pnr" 
-        parameterstring *= "|n=" * string(Int64(parameters["n"]))
+        parameterstring *= "_n" * string(Int64(parameters["n"]))
     else
-        parameterstring *= "|" * parameters["init"]
+        parameterstring *= "_" * parameters["init"]
     end
-    parameterstring *= "|Nx="       * string(parameters["Nx"]) 
-    parameterstring *= "|sdim=" 	* string(parameters["sdim"]) 
-    parameterstring *= "|Nsteps="   * string(parameters["Nsteps"])  
-    parameterstring *= "|dt="    	* string(Int64(parameters["dt"]*1000))  
-    parameterstring *= "|m="     	* string(Int64(parameters["Mass"]*100))
-    parameterstring *= "|NstepsinMemory="    * string(parameters["NstepsinMemory"])
-    if parameters["tag"]!= "" parameterstring *= "|" * parameters["tag"] end
+    parameterstring *= "_Nx"       * string(parameters["Nx"]) 
+    parameterstring *= "_sdim" 	* string(parameters["sdim"]) 
+    parameterstring *= "_Nsteps"   * string(parameters["Nsteps"])  
+    parameterstring *= "_dt"    	* string(Int64(parameters["dt"]*1000))  
+    parameterstring *= "_m"     	* string(Int64(parameters["Mass"]*100))
+    parameterstring *= "_NstepsinMemory"    * string(parameters["NstepsinMemory"])
+    if parameters["tag"]!= "" parameterstring *= "_" * parameters["tag"] end
 end
 
 function QFTdynamicsProblem(modelfile::TwoPIGaugeScalarfile, parameters)
