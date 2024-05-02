@@ -331,25 +331,15 @@ function createMeasurement(t::Int64, model::CSGaugeScalarModel, simdata::CSGauge
                         E2k[i,j,k][idir,jdir] /= 3*vol # hermitian for every k: b(x,y) = b(y,x)*
                     end
                 end
-                # if PL contains a zero
-                if sum( iszero.(P_L[i,j,k]) ) > 0 
-                    DL[i,j,k]  = 0
-                    E2L[i,j,k] = 0
-                    tmplattice .= P_T[i,j,k] *  Dk[i,j,k] # Not hermitian
-                    DT[i,j,k]  = 1/3 * real(tmplattice[1,1] + tmplattice[2,2] + tmplattice[3,3] )
-                    tmplattice .= P_T[i,j,k] *  E2k[i,j,k] # Not hermitian
-                    E2T[i,j,k] = 1/3 * real(tmplattice[1,1] + tmplattice[2,2] + tmplattice[3,3] )
-                else
-                    # compute longitudinal and transverse propagators (P_L & P_T pre-calculated in tmpdata)
-                    tmplattice .= P_L[i,j,k] *  Dk[i,j,k] # Not hermitian
-                    DL[i,j,k] = mean( real.( tmplattice ./ P_L[i,j,k] ) ) # if perfectly isotropic then all entries are the same
-                    tmplattice .= P_T[i,j,k] *  Dk[i,j,k] # Not hermitian
-                    DT[i,j,k] = mean( real.( tmplattice ./ P_T[i,j,k] ) ) # if perfectly isotropic then all entries are the same
-                    tmplattice .= P_L[i,j,k] *  E2k[i,j,k] # Not hermitian
-                    E2L[i,j,k] = mean( real.( tmplattice ./ P_L[i,j,k] ) ) # if perfectly isotropic then all entries are the same
-                    tmplattice .= P_T[i,j,k] *  E2k[i,j,k] # Not hermitian
-                    E2T[i,j,k] = mean( real.( tmplattice ./ P_T[i,j,k] ) ) # if perfectly isotropic then all entries are the same
-                end
+                # compute longitudinal and transverse propagators (P_L & P_T pre-calculated in tmpdata)
+                tmplattice .= P_L[i,j,k] *  Dk[i,j,k] # Not hermitian
+                DL[i,j,k] = tr( real(tmplattice) ) 
+                tmplattice .= P_T[i,j,k] *  Dk[i,j,k] # Not hermitian
+                DT[i,j,k] = tr( real(tmplattice) ) / 2
+                tmplattice .= P_L[i,j,k] *  E2k[i,j,k] # Not hermitian
+                E2L[i,j,k] = tr( real.( tmplattice ) )
+                tmplattice .= P_T[i,j,k] *  E2k[i,j,k] # Not hermitian
+                E2T[i,j,k] = tr( real.( tmplattice ) ) / 2
             end
         end
     end
