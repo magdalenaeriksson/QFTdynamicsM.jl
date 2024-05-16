@@ -89,14 +89,14 @@ function plotdata(plots::Dict, thesolution::QFTdynamicsSolutionCSGaugeScalar, mo
         end
     end
     # Gauge field
-    if mode == "c" plots["AGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"P  <A(t,k)A(t,-k)>/V")
+    if mode == "c" plots["AGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"<A(t,k)A(t,-k)>/V")
     else
         for (i, kidx) in enumerate(kLidx)
         plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DLk[kidx] for element in measurearray], ls=:solid, lc=color[i], label="DL: k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)))
         plot!(plots["AGauge_t.png"],[element.time for element in measurearray], [element.DTk[kidx] for element in measurearray], ls=:dot  , lc=color[i], label="DT: k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)))
         end
     end
-    if mode == "c" plots["EGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"P  <E(t,k)E(t,-k)>/V")
+    if mode == "c" plots["EGauge_t.png"] = plot(xlabel = L"tm",ylabel =L"<E(t,k)E(t,-k)>/V")
     else
         for (i, kidx) in enumerate(kLidx)
         plot!(plots["EGauge_t.png"],[element.time for element in measurearray], [element.E2L[kidx] for element in measurearray], ls=:solid, lc=color[i], label="E2L: k=" * string(round(disc.fftwhelper[kidx].lev, digits=1)))
