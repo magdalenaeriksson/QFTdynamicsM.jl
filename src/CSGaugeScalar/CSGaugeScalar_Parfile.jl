@@ -7,35 +7,29 @@ const REPL = true
         "Nx"    =>  32, 
         "sdim"  =>  3, 
         "dt"    =>  0.05,
-        "Nsteps"=>  300,
+        "Nsteps"=>  50,
         "NstepsinMemory"  =>  0, # 3 - min for LO
         "Nmeas" =>  0, # either 0 (all timesteps are measured) or >=3 (because the plot script wants to draw 3 graphs)
-        #model
+        # Model (options: CS_SUNgaugeScalar, CS_SUNgaugeScalarTachyonic, CS_U1gaugeScalar)
         "Mod"  =>  "CS_SUNgaugeScalar",
-        #"Mod"  =>  "CS_U1gaugeScalar",
         "Lambda" =>  0.125,
         "g" =>  1,#0.667,
         "N" =>  2,
         #"ONgroup"=> 1,
-        #initialisation
-        "init"  =>  "Pnr",
-        #"init"  =>  "Thermal",
-        #"init"  =>  "TopHatT1",
+        # Initialisation (options: MCPnr, MCThermal, Pnr, Thermal, TopHatT1, TopHatT2, TopHatT3)
+        "init"  =>  "MCPnr",
         "T"     =>  5,
         "n"     =>  1,
-        #Reno
+        # Renormalisation (not applicable for CS)
         "Reno"  =>  "RNone",
-        #PertExp
-        #"Pexp"  =>  "LambdaLO",
-        #"Pexp"  =>  "LambdaNLO",
-        #"Pexp"  =>  "LOloop",
+        # PertExp (options: CS, LOloop, LambdaLO, LambdaNLO)
         "Pexp"  =>  "CS",
         # Numerics
         #"Num"   =>  "GPUreduced",
         "Num"   =>  "CPU",
-        "Runs"   =>  8,#90, # should be >= num.Threads() = 8 by default
+        "Runs"   =>  8, # should be >= num.Threads() = 8 by default
         "seed"   =>  1,
         "Nchunks"   =>  0, # if 0 -> set to @Threads.nthreads
-        #extra
+        # Extras
         "tag"   =>  "newInitalCondsTest", #dont use "_" in the tag
         "ov"    =>  true)
