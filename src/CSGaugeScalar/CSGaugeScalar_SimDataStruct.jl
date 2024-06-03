@@ -111,8 +111,8 @@ end
     Nx::Int64
     sdim::Int64
     # longitudinal/transverse projection operators
-    P_L::Array{Array{Float64}, 3} #Matrix
-    P_T::Array{Array{Float64}, 3} #Matrix
+    P_L::Array{Array{ComplexF64}, 3} #Matrix
+    P_T::Array{Array{ComplexF64}, 3} #Matrix
     function SU2HiggsTmpData(simdata::CSGaugeScalarSimData)
         @unpack Nx, sdim = simdata
         rhok = 0*[createclattice(Nx, sdim),createclattice(Nx, sdim),createclattice(Nx, sdim),createclattice(Nx, sdim)]
@@ -173,28 +173,29 @@ end
 	    end
 
         # projection operators - at each point in k space a 3x3 projection operator
-        P_L = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
-        P_T = Array{Array{Float64}}(undef,Nx,Nx,Nx) #sdim
+        P_L = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
+        P_T = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
         for i in 1:Nx # "in k space"
             for j in 1:Nx # "in k space"
                 for k in 1:Nx # "in k space"
-                    P_L[i,j,k] = zeros(3,3) 
-                    P_T[i,j,k] = zeros(3,3)
+                    P_L[i,j,k] = zeros(ComplexF64,3,3) 
+                    P_T[i,j,k] = zeros(ComplexF64,3,3)
                     E2k[i,j,k] = zeros(ComplexF64,3,3)
                     Dk[i,j,k]  = zeros(ComplexF64,3,3)
                 end
             end
         end
         # momenta based on central derivative
-        momentavalues = sin.(nvalues*(2*pi)/Nx) 
+        momentavalues = -im .* ( exp.(2*pi*im*nvalues/Nx) .- 1 ) #2*sin.(nvalues*(pi)/Nx) 
         # mometa at index 0 and Int(Nx/2) + 1 are 0 (yes, there are 2).Set them manually (otherwise the Nx/2+1 is like 10^-16)
         momentavalues[1] = 0
-        momentavalues[ Int(Nx/2) + 1 ] = 0
+        #momentavalues[ Int(Nx/2) + 1 ] = 0
 
         for i in 1:Nx # "in k space" # x component
             for j in 1:Nx # "in k space" # y component
                 for k in 1:Nx # "in k space" # y component
-                    p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+                    #p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+                    p2 = abs2(momentavalues[i]) + abs2(momentavalues[j]) + abs2(momentavalues[k])
                     if p2 == 0
                         P_T[i,j,k][1,1] = 1 #xx component
                         P_T[i,j,k][2,2] = 1 #yy component
@@ -219,28 +220,25 @@ end
                         P_L[i,j,k][3,2] = 0 #zy component
                    else
                         # P_T
-                        P_T[i,j,k][1,1] = 1 - momentavalues[i] * momentavalues[i] / p2 #xx component
-                        P_T[i,j,k][2,2] = 1 - momentavalues[j] * momentavalues[j] / p2 #yy component
-                        P_T[i,j,k][3,3] = 1 - momentavalues[k] * momentavalues[k] / p2 #zz component
-
-                        P_T[i,j,k][1,2] =   - momentavalues[i] * momentavalues[j] / p2 #xy component
-                        P_T[i,j,k][1,3] =   - momentavalues[i] * momentavalues[k] / p2 #xz component
-                        P_T[i,j,k][2,1] =   - momentavalues[j] * momentavalues[i] / p2 #yx component
-                        P_T[i,j,k][2,3] =   - momentavalues[j] * momentavalues[k] / p2 #yz component
-                        P_T[i,j,k][3,1] =   - momentavalues[k] * momentavalues[i] / p2 #zx component
-                        P_T[i,j,k][3,2] =   - momentavalues[k] * momentavalues[j] / p2 #zy component
-
+                        P_T[i,j,k][1,1] = 1 - momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                        P_T[i,j,k][2,2] = 1 - momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                        P_T[i,j,k][3,3] = 1 - momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
+                        P_T[i,j,k][1,2] =   - momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                        P_T[i,j,k][1,3] =   - momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                        P_T[i,j,k][2,1] =   - momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                        P_T[i,j,k][2,3] =   - momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                        P_T[i,j,k][3,1] =   - momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                        P_T[i,j,k][3,2] =   - momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
                         # P_L
-                        P_L[i,j,k][1,1] = momentavalues[i] * momentavalues[i] / p2 #xx component
-                        P_L[i,j,k][2,2] = momentavalues[j] * momentavalues[j] / p2 #yy component
-                        P_L[i,j,k][3,3] = momentavalues[k] * momentavalues[k] / p2 #zz component
-
-                        P_L[i,j,k][1,2] = momentavalues[i] * momentavalues[j] / p2 #xy component
-                        P_L[i,j,k][1,3] = momentavalues[i] * momentavalues[k] / p2 #xz component
-                        P_L[i,j,k][2,1] = momentavalues[j] * momentavalues[i] / p2 #yx component
-                        P_L[i,j,k][2,3] = momentavalues[j] * momentavalues[k] / p2 #yz component
-                        P_L[i,j,k][3,1] = momentavalues[k] * momentavalues[i] / p2 #zx component
-                        P_L[i,j,k][3,2] = momentavalues[k] * momentavalues[j] / p2 #zy component
+                        P_L[i,j,k][1,1] = momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                        P_L[i,j,k][2,2] = momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                        P_L[i,j,k][3,3] = momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
+                        P_L[i,j,k][1,2] = momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                        P_L[i,j,k][1,3] = momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                        P_L[i,j,k][2,1] = momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                        P_L[i,j,k][2,3] = momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                        P_L[i,j,k][3,1] = momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                        P_L[i,j,k][3,2] = momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
                    end
                 end
             end
