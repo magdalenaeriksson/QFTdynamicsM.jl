@@ -12,7 +12,7 @@ export CSinitTmpData!
 function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeScalarTmpData, model::SUNgaugeScalar, disc::TwoPIGaugeScalarDiscretization)
     # t=0: determine scalar propagator according to Gauss constraint, compute initial E-field (gauge field A=0 here)
     @unpack fftplan = simdata
-    @unpack phix, piix, Pix, Phix, Pik, Phik, PiPik, PiPhik, PhiPhik, Ea, pauli, nvalues, rhox, rhok, chik, chix, Ea, Aaix, Aaik, Dk, DLk, DTk, P_L = tmpdata
+    @unpack phix, piix, Pix, Phix, Pik, Phik, PiPik, PiPhik, PhiPhik, Ea, pauli, nvalues, rhox, rhok, chik, chix, Ea, Aaix, Aaik, Dk, DLk, DTk, P_L, P_T = tmpdata
     @unpack vol, Nx = disc
 
     ##
@@ -104,51 +104,94 @@ function CSinitTmpData!(simdata::TwoPIGaugeScalarSimData, tmpdata::TwoPIGaugeSca
                 end
             end
         end
-        
-        ##
-        ## compute gauge field at t = dt
-        #summ = 0.
-        for a in 1:3
-            for i in 1:3
-                for idx in 1:vol
-                    Aaix[a][i][idx] = -disc.dt * Ea[idx][i][a]
-                end
-                #summ += sum(Aaix[a][i])
+
+
+    #
+    # gauge proagator measurements
+    # (compute gauge field at t = dt)
+    # extract gauge field in coordinate space 
+    for a in 1:3
+        for i in 1:3
+            for idx in 1:vol
+                Aaix[a][i][idx] = -disc.dt * Ea[idx][i][a]
+                #tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i])) ) / (2*model.g) # real data stored in complex array
             end
         end
-        # @show sum(Aaix[1][1])
-        # @show sum(Aaix[2][1])
-        # @show sum(Aaix[3][1])
-        # construct physical gauge field in momentum space
-        for a in 1:3
-            for i in 1:3
-                Aaik[a][i] .= (fftplan * Aaix[a][i])
-
-                # add phase for physical gauge field located between lattice sites:
-                for nx in 1:Nx
-                    for ny in 1:Nx
-                        for nz in 1:Nx
-                            p = [ 2*pi*nvalues[nx]/Nx, 2*pi*nvalues[ny]/Nx, 2*pi*nvalues[nz]/Nx ]
-                            Aaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
-                        end
+    end
+  
+    # construct physical gauge field in momentum space
+    for a in 1:3
+        for i in 1:3
+            Aaik[a][i] .= (fftplan * Aaix[a][i]) # hermitian array b(k) = b(-k)*
+        end
+    end
+    
+    # construct physical propagators (already color averaged)
+    tmplattice = zeros(ComplexF64,3,3)
+    for i in 1:Nx
+        for j in 1:Nx
+            for k in 1:Nx
+                # set up propagator
+                for idir in 1:3
+                    for jdir in 1:3
+                        Dk[i,j,k][idir,jdir] = Aaik[1][idir][i,j,k] * conj(Aaik[1][jdir][i,j,k])  +  Aaik[2][idir][i,j,k] * conj(Aaik[2][jdir][i,j,k])  +  Aaik[3][idir][i,j,k] * conj(Aaik[3][jdir][i,j,k]) 
+                        Dk[i,j,k][idir,jdir] /= 3*vol # hermitian for every k: b(x,y) = b(y,x)*
                     end
                 end
+                # compute longitudinal and transverse propagators (P_L & P_T pre-calculated in tmpdata)
+                tmplattice .= P_L[i,j,k] *  Dk[i,j,k] # Not hermitian
+                DLk[i,j,k] = tr( real(tmplattice) ) 
+                tmplattice .= P_T[i,j,k] *  Dk[i,j,k] # Not hermitian
+                DTk[i,j,k] = tr( real(tmplattice) ) / 2
             end
         end
-        @show sum(DLk)
-        # construct physical propagator
-        for i in 1:3
-            for j in 1:3
-                Dk[i,j] .= ( Aaik[1][i] .* conj(Aaik[1][i])  +  Aaik[2][i] .* conj(Aaik[2][i])  +  Aaik[3][i] .* conj(Aaik[3][i]) )
-                Dk[i,j] /= 3*vol
+    end
 
-                # compute longitudinal propagator
-                DLk  .+= P_L[j,i] .* Dk[i,j]
-            end
-        end
-        @show sum(DLk)
-        # compute transverse propagators
-        DTk .= Dk[1,1] + Dk[2,2] + Dk[3,3] - DLk
+        
+        #########
+        ######### compute gauge field at t = dt
+        ########summ = 0.
+        #######for a in 1:3
+        #######    for i in 1:3
+        #######        for idx in 1:vol
+        #######            Aaix[a][i][idx] = -disc.dt * Ea[idx][i][a]
+        #######        end
+        #######        #summ += sum(Aaix[a][i])
+        #######    end
+        #######end
+        ######## @show sum(Aaix[1][1])
+        ######## @show sum(Aaix[2][1])
+        ######## @show sum(Aaix[3][1])
+        ######## construct physical gauge field in momentum space
+        #######for a in 1:3
+        #######    for i in 1:3
+        #######        Aaik[a][i] .= (fftplan * Aaix[a][i])
+        #######
+        #######        # add phase for physical gauge field located between lattice sites:
+        #######        for nx in 1:Nx
+        #######            for ny in 1:Nx
+        #######                for nz in 1:Nx
+        #######                    p = [ 2*pi*nvalues[nx]/Nx, 2*pi*nvalues[ny]/Nx, 2*pi*nvalues[nz]/Nx ]
+        #######                    Aaik[a][i][nx,ny,nz] *= exp(-im * p[i]/2)
+        #######                end
+        #######            end
+        #######        end
+        #######    end
+        #######end
+        #######@show sum(DLk)
+        ######## construct physical propagator
+        #######for i in 1:3
+        #######    for j in 1:3
+        #######        Dk[i,j] .= ( Aaik[1][i] .* conj(Aaik[1][i])  +  Aaik[2][i] .* conj(Aaik[2][i])  +  Aaik[3][i] .* conj(Aaik[3][i]) )
+        #######        Dk[i,j] /= 3*vol
+        #######
+        #######        # compute longitudinal propagator
+        #######        DLk  .+= P_L[j,i] .* Dk[i,j]
+        #######    end
+        #######end
+        #######@show sum(DLk)
+        ######## compute transverse propagators
+        #######DTk .= Dk[1,1] + Dk[2,2] + Dk[3,3] - DLk
 
 
         #######################################################
@@ -190,14 +233,14 @@ function CSinitSimData!(simdata::TwoPIGaugeScalarSimData, model::SUNgaugeScalar,
             #
             simdata.FT[1,1][idx] = 0
             simdata.FT[2,1][idx] = 0
-            simdata.FT[2,2][idx] = disc.dt^2 * real(tmpdata.AvrgDTk[1][idx])
+            simdata.FT[2,2][idx] = real(tmpdata.AvrgDTk[1][idx]) #disc.dt^2 * real(tmpdata.AvrgDTk[1][idx])
             simdata.rT[1,1][idx] *= 0
             simdata.rT[2,1][idx] *= disc.dt * thesign(2,1,simdata.NstepsinMemory)
             simdata.rT[2,2][idx] *= 0
             #
             simdata.FL[1,1][idx] = 0
             simdata.FL[2,1][idx] = 0
-            simdata.FL[2,2][idx] = disc.dt^2 * real(tmpdata.AvrgDLk[1][idx])
+            simdata.FL[2,2][idx] = real(tmpdata.AvrgDLk[1][idx]) #disc.dt^2 * real(tmpdata.AvrgDLk[1][idx])
             simdata.rL[1,1][idx] *= 0
             simdata.rL[2,1][idx] *= disc.dt * thesign(2,1,simdata.NstepsinMemory)
             simdata.rL[2,2][idx] *= 0
@@ -341,11 +384,11 @@ function initialize!(thesolution::QFTdynamicsSolutionTwoPIGaugeScalar, tmpdata::
     @unpack model, pexp, disc, init, reno, num, simsetup = problem
 
     if isnewsimulation(simsetup) == true
-        println("Initialising tmpdata structs: averaging samples"); flush(stdout)
-        CSinitTmpData!(simdata, tmpdata, model, disc)
-        println("Initialising simdata structs: initialising propagators"); flush(stdout)
-        CSinitSimData!(simdata, model, tmpdata, disc)
-        #initSimData!(simdata, tmpdata, model, pexp, disc, init)
+        #println("Initialising tmpdata structs: averaging samples"); flush(stdout)
+        #CSinitTmpData!(simdata, tmpdata, model, disc)
+        #println("Initialising simdata structs: initialising propagators"); flush(stdout)
+        #CSinitSimData!(simdata, model, tmpdata, disc)
+        initSimData!(simdata, tmpdata, model, pexp, disc, init)
     end
     #@show tmpdata.tmplatvec[1]
     simsetup.lastEvolStep = 2
