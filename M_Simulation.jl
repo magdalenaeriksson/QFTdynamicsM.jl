@@ -1,3 +1,4 @@
+# julia -t 8 --project=. M_Simulation.jl --Mass 0.7 --Nx 32 --sdim 3 --dt 0.05 --Nsteps 50 --NstepsinMemory 3 --Nmeas 0 --Mod SUNgaugeScalar --Lambda .125 --g 1 --N 2 --init Pnr --T 5 --n 1 --Reno RNone --Pexp LOloop --Num CPUfull --Nchunks 0 --tag test --ov
 ###################################################################################################################################
 using QFTdynamics
 using Serialization
