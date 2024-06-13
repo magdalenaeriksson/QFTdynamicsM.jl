@@ -206,16 +206,24 @@ struct TwoPIGaugeScalarTmpDataCPUfull{sdim} <: TwoPIGaugeScalarTmpData
     Ea::Array
     # Pauli matrix vector
     pauli::Vector
-    # nvalues 
+    # nvalues
     nvalues::Vector
     # Initial gauge field propagator helpers
-    Aaix::Vector{Vector{clattice}}#Vector{clattice{sdim}}
-    Aaik::Vector{Vector{clattice}}#Vector{clattice{sdim}}
-    Dk::Matrix
-    DLk::clattice{sdim}
-    DTk::clattice{sdim}
-    # longitudinal projection operator
-    P_L::Matrix
+    #Aaix::Vector{Vector{clattice}}#Vector{clattice{sdim}}
+    #Aaik::Vector{Vector{clattice}}#Vector{clattice{sdim}}
+    #Dk::Matrix
+    #DLk::clattice{sdim}
+    #DTk::clattice{sdim}
+    ## longitudinal projection operator
+    #P_L::Matrix
+    Aaix::Vector{Vector{clattice{sdim}}} # Acttually no clattice required, it is a real field : Aaix[a][i][idx] = tr( im * pauli[a] * (simdata.U[idx][i] - adjoint(simdata.U[idx][i])) ) / (2*model.g)
+    Aaik::Vector{Vector{clattice{sdim}}}
+    Dk::Array{Array{ComplexF64}, 3} #Matrix
+    DLk::Array{Float64, 3}
+    DTk::Array{Float64, 3}
+    # longitudinal/transverse projection operators
+    P_L::Array{Array{ComplexF64}, 3} #Matrix
+    P_T::Array{Array{ComplexF64}, 3} #Matrix
     # temp lattice vectors
     tmp::Array
     res::Array
@@ -270,40 +278,119 @@ struct TwoPIGaugeScalarTmpDataCPUfull{sdim} <: TwoPIGaugeScalarTmpData
         #
         Aaix   = Vector{Vector{clattice}}(undef,3)
         Aaik   = Vector{Vector{clattice}}(undef,3)
-        Dk     = Matrix{clattice}(undef,3,3)
-        DLk    = 0*createclattice(Nx, sdim)
-        DTk    = 0*createclattice(Nx, sdim)
-        P_L    = Matrix{clattice}(undef,3,3)
+        Dk = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx)
+        DLk = zeros(Nx,Nx,Nx)
+        DTk = zeros(Nx,Nx,Nx)
         for a in 1:3
             Aaix[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
             Aaik[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
         end
-        for i in 1:3
-            for j in 1:3
-                Dk[i,j]  = 0 * createclattice(Nx, sdim) 
-                P_L[i,j] = 0 * createclattice(Nx, sdim)
+        # projection operators - at each point in k space a 3x3 projection operator
+        P_L = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
+        P_T = Array{Array{ComplexF64}}(undef,Nx,Nx,Nx) #sdim
+        for i in 1:Nx # "in k space"
+            for j in 1:Nx # "in k space"
+                for k in 1:Nx # "in k space"
+                    P_L[i,j,k] = zeros(ComplexF64,3,3) 
+                    P_T[i,j,k] = zeros(ComplexF64,3,3)
+                    Dk[i,j,k]  = zeros(ComplexF64,3,3)
+                end
+            end
+        end
+        # momenta based on central derivative
+        momentavalues = -im .* ( exp.(2*pi*im*nvalues/Nx) .- 1 ) # 2*sin.(nvalues*(pi)/Nx) 
+        # mometa at index 0 and Int(Nx/2) + 1 are 0 (yes, there are 2). Set them manually (otherwise the Nx/2+1 is like 10^-16)
+        momentavalues[1] = 0
+        #momentavalues[ Int(Nx/2) + 1 ] = 0
+
+        for i in 1:Nx # "in k space" # x component
+            for j in 1:Nx # "in k space" # y component
+                for k in 1:Nx # "in k space" # y component
+                    #p2 = momentavalues[i]^2 + momentavalues[j]^2 + momentavalues[k]^2
+                    p2 = abs2(momentavalues[i]) + abs2(momentavalues[j]) + abs2(momentavalues[k])
+                    if p2 == 0
+                        P_T[i,j,k][1,1] = 1 #xx component
+                        P_T[i,j,k][2,2] = 1 #yy component
+                        P_T[i,j,k][3,3] = 1 #zz component
+                                            
+                        P_T[i,j,k][1,2] = 0 #xy component
+                        P_T[i,j,k][1,3] = 0 #xz component
+                        P_T[i,j,k][2,1] = 0 #yx component
+                        P_T[i,j,k][2,3] = 0 #yz component
+                        P_T[i,j,k][3,1] = 0 #zx component
+                        P_T[i,j,k][3,2] = 0 #zy component
+                
+                        P_L[i,j,k][1,1] = 0 #xx component
+                        P_L[i,j,k][2,2] = 0 #yy component
+                        P_L[i,j,k][3,3] = 0 #zz component
+                                            
+                        P_L[i,j,k][1,2] = 0 #xy component
+                        P_L[i,j,k][1,3] = 0 #xz component
+                        P_L[i,j,k][2,1] = 0 #yx component
+                        P_L[i,j,k][2,3] = 0 #yz component
+                        P_L[i,j,k][3,1] = 0 #zx component
+                        P_L[i,j,k][3,2] = 0 #zy component
+                   else
+                        # P_T
+                        P_T[i,j,k][1,1] = 1 - momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                        P_T[i,j,k][2,2] = 1 - momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                        P_T[i,j,k][3,3] = 1 - momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
+                        P_T[i,j,k][1,2] =   - momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                        P_T[i,j,k][1,3] =   - momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                        P_T[i,j,k][2,1] =   - momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                        P_T[i,j,k][2,3] =   - momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                        P_T[i,j,k][3,1] =   - momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                        P_T[i,j,k][3,2] =   - momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
+                        # P_L
+                        P_L[i,j,k][1,1] = momentavalues[i] * conj(momentavalues[i]) / p2 #xx component
+                        P_L[i,j,k][2,2] = momentavalues[j] * conj(momentavalues[j]) / p2 #yy component
+                        P_L[i,j,k][3,3] = momentavalues[k] * conj(momentavalues[k]) / p2 #zz component
+                        P_L[i,j,k][1,2] = momentavalues[i] * conj(momentavalues[j]) / p2 #xy component
+                        P_L[i,j,k][1,3] = momentavalues[i] * conj(momentavalues[k]) / p2 #xz component
+                        P_L[i,j,k][2,1] = momentavalues[j] * conj(momentavalues[i]) / p2 #yx component
+                        P_L[i,j,k][2,3] = momentavalues[j] * conj(momentavalues[k]) / p2 #yz component
+                        P_L[i,j,k][3,1] = momentavalues[k] * conj(momentavalues[i]) / p2 #zx component
+                        P_L[i,j,k][3,2] = momentavalues[k] * conj(momentavalues[j]) / p2 #zy component
+                   end
+                end
             end
         end
         #
-        # fill P_L
-        for i in 1:3
-            for j in 1:3
-                for nx in 1:Nx
-                    for ny in 1:Nx
-                        for nz in 1:Nx
-                            p_phys = [ 2*sin(pi*nvalues[nx]/Nx), 2*sin(pi*nvalues[ny]/Nx), 2*sin(pi*nvalues[nz]/Nx)]
-                            p2 = sum( p_phys .^2 )
+        # Aaix   = Vector{Vector{clattice}}(undef,3)
+        # Aaik   = Vector{Vector{clattice}}(undef,3)
+        # Dk     = Matrix{clattice}(undef,3,3)
+        # DLk    = 0*createclattice(Nx, sdim)
+        # DTk    = 0*createclattice(Nx, sdim)
+        ##P_L    = Matrix{clattice}(undef,3,3)
+        # for a in 1:3
+        #     Aaix[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
+        #     Aaik[a] = 0 * [ createclattice(Nx, sdim), createclattice(Nx, sdim), createclattice(Nx, sdim) ]
+        # end
+        # for i in 1:3
+        #     for j in 1:3
+        #         Dk[i,j]  = 0 * createclattice(Nx, sdim) 
+        #         P_L[i,j] = 0 * createclattice(Nx, sdim)
+        #     end
+        # end
+        # # fill P_L
+        # for i in 1:3
+        #     for j in 1:3
+        #         for nx in 1:Nx
+        #             for ny in 1:Nx
+        #                 for nz in 1:Nx
+        #                     p_phys = [ 2*sin(pi*nvalues[nx]/Nx), 2*sin(pi*nvalues[ny]/Nx), 2*sin(pi*nvalues[nz]/Nx)]
+        #                     p2 = sum( p_phys .^2 )
                             
-                            if p2 == 0
-                                P_L[i,j][nx,ny,nz] = 1
-                            else
-                                P_L[i,j][nx,ny,nz] =  p_phys[i] * p_phys[j] / p2
-                            end
-                        end
-                    end
-                end
-            end
-         end
+        #                     if p2 == 0
+        #                         P_L[i,j][nx,ny,nz] = 1
+        #                     else
+        #                         P_L[i,j][nx,ny,nz] =  p_phys[i] * p_phys[j] / p2
+        #                     end
+        #                 end
+        #             end
+        #         end
+        #     end
+        #  end
         tmp = 0*createlattice(Nx, sdim)
         res = 0*createlattice(Nx, sdim)
         G1T = 0*createlattice(Nx, sdim)
@@ -324,7 +411,7 @@ struct TwoPIGaugeScalarTmpDataCPUfull{sdim} <: TwoPIGaugeScalarTmpData
             [createlattice(Nx, sdim)     for i in 1:nchunks], nchunks,
             #[0. * createlattice(Nx, sdim), 0. * createlattice(Nx, sdim)], nchunks,
             rhok, chik, rhox, chix, phix, piix, Pix, Phix, Pik, Phik, PiPik, PiPhik, PhiPhik, Ea, pauli, nvalues,
-            Aaix, Aaik, Dk, DLk, DTk, P_L, tmp, res, G1T, G1L, G2T, G2L,
+            Aaix, Aaik, Dk, DLk, DTk, P_L, P_T, tmp, res, G1T, G1L, G2T, G2L,
             AvrgPhiPhik, AvrgPiPhik, AvrgPiPik, AvrgDTk, AvrgDLk )
     end
 end
